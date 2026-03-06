@@ -2,8 +2,9 @@ import { useState } from "react"
 
 const navLinks = [
   { href: "/", label: "Home" },
-  { href: "/login", label: "login" },
+  { href: "/login", label: "Login" },
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/admin", label: "Admin Dashboard" },
 ]
 
 export default function Navbar() {
@@ -13,7 +14,7 @@ export default function Navbar() {
     <nav className="navbar navbar-expand-md navbar-dark bg-primary" role="navigation" aria-label="Main navigation">
       <div className="container">
         {/* Logo */}
-        <a className="navbar-brand fw-bold" href="/">MyBrand</a>
+        <a className="navbar-brand fw-bold" href="/">FEP Tracker</a>
 
         {/* Hamburger button */}
         <button
