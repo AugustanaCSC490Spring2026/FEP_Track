@@ -10,7 +10,7 @@ function Login() {
   const [user, setUser] = useState(null)
   const [isRegistered, setIsRegistered] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [extraInfo, setExtraInfo] = useState("")
+  const [phoneNumber, setPhoneNumber] = useState("")
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -51,16 +51,30 @@ function Login() {
   const handleRegister = async () => {
     if (!user) return
 
+    const username = user.email.split("@")[0];
+    const hasNumber = /\d/.test(username);
+    const role = hasNumber ? "student" : "staff";
+
     const userRef = doc(database, "users", user.uid)
 
     await setDoc(userRef, {
       name: user.displayName,
       email: user.email,
-      extraInfo: extraInfo,
+      role: role,
+      phone: phoneNumber,
       createdAt: new Date(),
     })
 
     setIsRegistered(true)
+  }
+
+  const formatPhoneNumber = (value) => {
+    const digits = value.replace(/\D/g, "")
+    const length = digits.length
+  
+    if (length < 4) return digits;
+    if (length < 7) return `${digits.slice(0,3)}-${digits.slice(3)}`
+    return `${digits.slice(0,3)}-${digits.slice(3,6)}-${digits.slice(6,10)}`
   }
 
   const handleLogOut = async () => {
@@ -88,7 +102,7 @@ function Login() {
         <div className="card">
           <h2>Please Register Account</h2>
           <p>Welcome {user.displayName}!</p>
-            <input type="text" placeholder="Enter additional info" onChange={(e) => setExtraInfo(e.target.value)}/>
+            <input type="tel" placeholder="Enter phone number" value={phoneNumber} onChange={(e) => setPhoneNumber(formatPhoneNumber(e.target.value))}/>
           <br /><br />
           <button onClick={handleRegister}>Complete Registration</button>
         </div>
