@@ -3,11 +3,11 @@ import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Badge from "react-bootstrap/Badge";
 import { useState } from "react";
-export default function EventCard({ event, onCallBack, user }) {
+export default function EventCard({ event, onCallBack, onEdit, user }) {
 const [applied, setApplied] = useState(false);//Just a plaveholder for now, will be replaced with actual application logic later
   const filled = event?.students?.length ?? 0;
 
-  const createdAt = event?.createdAt?.toDate?.();
+  const createdAt = event?.createdAt?.toDate?.() ?? event?.createdAt;;
   const timeAgo = createdAt
     ? new Intl.RelativeTimeFormat("en", { numeric: "auto" }).format(
         Math.round((createdAt - Date.now()) / (1000 * 60 * 60 * 24)), "day"
@@ -69,9 +69,26 @@ const [applied, setApplied] = useState(false);//Just a plaveholder for now, will
           )}
 
           {user?.role === "staff" && (
-            <Button variant="danger" size="sm" onClick={() => onCallBack(event.id)}>
-              Delete
-            </Button>
+            <div className="d-flex gap-2">
+              <Button
+                variant="outline-primary"
+                size="sm"
+                onClick={() => onEdit(event)}
+              >
+                Edit
+              </Button>
+
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => {
+                  console.log("Delete clicked", event.id);
+                  onCallBack(event.id)}
+                }
+              >
+                Delete
+              </Button>
+            </div>
           )}
 
           {user?.role === "student" && (
@@ -88,8 +105,9 @@ const [applied, setApplied] = useState(false);//Just a plaveholder for now, will
         </Card.Body>
 
         {timeAgo && (
-          <Card.Footer className="text-muted px-4" style={{ fontSize: 12,  border: "none" }}>
-            Created {timeAgo}
+          <Card.Footer className="text-muted px-4 d-flex justify-content-between" style={{ fontSize: 12,  border: "none" }}>
+            <span>Created {timeAgo}</span>
+            <span>Created by {event.createdBy}</span>
           </Card.Footer>
         )}
       </Card>
