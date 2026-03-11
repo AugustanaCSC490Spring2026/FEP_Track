@@ -1,20 +1,34 @@
-import { useState } from "react"
-
+import { useState } from "react";
+import {
+  House,
+  BoxArrowInRight,
+  Speedometer2,
+  Person,
+  Gear,
+} from "react-bootstrap-icons";
+/* There is no need for a login seperate page it should be built on to the a profile page */
 const navLinks = [
-  { href: "/", label: "Home" },
-  { href: "/login", label: "Login" },
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/admin", label: "Admin Dashboard" },
-]
+  { href: "/", label: "Home", icon: <House className="me-3" /> },
+  {
+    href: "/profile",
+    label: "Account",
+    icon: <Person className="me-3" />,
+  }
+];
 
-export default function Navbar() {
-  const [isOpen, setIsOpen] = useState(false)
-
+export default function Navbar({ user }) {
+  const [isOpen, setIsOpen] = useState(false);
   return (
-    <nav className="navbar navbar-expand-md navbar-dark bg-primary" role="navigation" aria-label="Main navigation">
+    <nav
+      className="navbar navbar-expand-md navbar-dark bg-primary"
+      role="navigation"
+      aria-label="Main navigation"
+    >
       <div className="container">
         {/* Logo */}
-        <a className="navbar-brand fw-bold" href="/">FEP Tracker</a>
+        <a className="navbar-brand fw-bold" href="/">
+          FEP Tracker
+        </a>
 
         {/* Hamburger button */}
         <button
@@ -29,22 +43,37 @@ export default function Navbar() {
         </button>
 
         {/* Links */}
-        <div className={`collapse navbar-collapse ${isOpen ? "show" : ""}`} id="mobile-menu">
+        <div
+          className={`collapse navbar-collapse ${isOpen ? "show" : ""}`}
+          id="mobile-menu"
+        >
           <ul className="navbar-nav ms-auto gap-1">
-            {navLinks.map((link) => (
-              <li className="nav-item" key={link.href}>
-                <a
-                  href={link.href}
-                  className="nav-link"
-                  onClick={() => setIsOpen(false)}
-                >
-                  {link.label}
-                </a>
-              </li>
-            ))}
+            {/* Show  no links if there is no user */}
+            {!user ? (
+              <>
+              </>
+            ) : (
+              navLinks.map((link) => (
+                <li className="nav-item" key={link.href}>
+                  <a
+                    href={link.href}
+                    className="nav-link"
+                    onClick={() => setIsOpen(false)}
+                    aria-current={
+                      window.location.pathname === link.href
+                        ? "page"
+                        : undefined
+                    }
+                    title={link.label}
+                  >
+                    {isOpen ? link.label : link.icon}
+                  </a>
+                </li>
+              ))
+            )}
           </ul>
         </div>
       </div>
     </nav>
-  )
+  );
 }

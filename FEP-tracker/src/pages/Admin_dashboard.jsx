@@ -4,6 +4,7 @@ import {
   collection,
   addDoc,
   query,
+  // eslint-disable-next-line no-unused-vars
   where,
   getDocs,
   deleteDoc,
@@ -18,6 +19,7 @@ import Form from "react-bootstrap/Form";
 import Card from "react-bootstrap/Card";
 import Row from "react-bootstrap/Row";
 import Modal from "react-bootstrap/Modal";
+import { Welcome } from "./Login";
 
 function Dashboard({ user }) {
   const [validated, setValidated] = useState(false);
@@ -147,7 +149,7 @@ function Dashboard({ user }) {
         fontFamily: "sans-serif",
       }}
     >
-      <h1 className="mb-4 text-center">Welcome, {user.displayName}</h1>
+      <Welcome/>
 
       <div className="text-center mt-3 mb-4">
         <Button
