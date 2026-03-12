@@ -1,21 +1,29 @@
 import { useEffect, useState } from "react";
 import { database } from "../firebase-config";
 import { collection, getDocs } from "firebase/firestore";
-import { startOfWeek, addDays, format } from "date-fns";
+import { startOfWeek, addDays, format, subWeeks, addWeeks } from "date-fns";
 import Card from "react-bootstrap/Card";
+import Button from "react-bootstrap/Button";
 
 function Home() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+  
+  const [currentWeekStart, setCurrentWeekStart] = useState(
+    startOfWeek(new Date(), { weekStartsOn: 1 })
+  );
 
   const START_HOUR = 6; 
   const END_HOUR = 24;  
   const HOUR_HEIGHT = 60; 
 
+  const handlePrevWeek = () => setCurrentWeekStart(prev => subWeeks(prev, 1));
+  const handleNextWeek = () => setCurrentWeekStart(prev => addWeeks(prev, 1));
+  const handleToday = () => setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
+
   useEffect(() => {
     const loadEvents = async () => {
-      const snap = await getDocs(collection(database, "events"));
+      const snap = await getDocs(collection(database, "upcoming_events"));
       const data = snap.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
@@ -30,26 +38,20 @@ function Home() {
 
   const getEventPosition = (event) => {
     if (!event.time) return {};
-
     const [start, end] = event.time.split(" – ");
     const [startHour, startMin] = start.split(":").map(Number);
     const [endHour, endMin] = end.split(":").map(Number);
-
     const startTotal = startHour * 60 + startMin;
     const endTotal = endHour * 60 + endMin;
-    
     const viewStartTotal = START_HOUR * 60; 
     const topPosition = ((startTotal - viewStartTotal) / 60) * HOUR_HEIGHT;
     const duration = endTotal - startTotal;
     const height = (duration / 60) * HOUR_HEIGHT;
 
-    return {
-      top: topPosition,
-      height: height,
-    };
+    return { top: topPosition, height: height };
   };
 
- const renderEventsForDay = (day) => {
+  const renderEventsForDay = (day) => {
     const dayEvents = events.filter((e) => {
       if (!e.date) return false;
       const [year, month, date] = e.date.split("-").map(Number);
@@ -59,25 +61,15 @@ function Home() {
 
     return dayEvents.map((event, index) => {
       const pos = getEventPosition(event);
-      
-
-      const overlaps = dayEvents.filter((other, idx) => {
+      const overlaps = dayEvents.filter((other) => {
         if (event.id === other.id) return false;
-        
-        const [startA, endA] = event.time.split(" – ");
-        const [startB, endB] = other.time.split(" – ");
-        
-        const sA = parseInt(startA.replace(':', ''));
-        const eA = parseInt(endA.replace(':', ''));
-        const sB = parseInt(startB.replace(':', ''));
-        const eB = parseInt(endB.replace(':', ''));
-
+        const [sA, eA] = event.time.split(" – ").map(t => parseInt(t.replace(':', '')));
+        const [sB, eB] = other.time.split(" – ").map(t => parseInt(t.replace(':', '')));
         return sA < eB && eA > sB;
       });
 
       const isOverlapping = overlaps.length > 0;
       const width = isOverlapping ? 90 / (overlaps.length + 1) : 90;
-      
       const leftOffset = isOverlapping ? (index % (overlaps.length + 1)) * width : 0;
 
       if (pos.top < 0 && (pos.top + pos.height) <= 0) return null;
@@ -100,13 +92,9 @@ function Home() {
             zIndex: 10,
             border: "1px solid white",
             boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-            transition: "all 0.2s ease"
           }}
-          title={`${event.title}: ${event.time}`}
         >
-          <div style={{ fontWeight: "bold", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
-            {event.title}
-          </div>
+          <strong>{event.title}</strong>
           <div style={{ fontSize: "10px" }}>{event.time}</div>
         </div>
       );
@@ -117,12 +105,23 @@ function Home() {
 
   return (
     <div style={{ padding: "20px", height: "calc(100vh - 70px)", overflowY: "auto" }}>
-      <h2 className="text-center mb-4">All Jobs</h2>
+      
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <Button variant="outline-primary" onClick={handlePrevWeek}>&larr; Previous Week</Button>
+        <div className="text-center">
+            <h2 className="mb-0">All Jobs</h2>
+            <span className="text-center">Week of {format(currentWeekStart, "MMMM do, yyyy")}</span>
+        </div>
+        <div>
+            <Button variant="outline-secondary" className="me-2" onClick={handleToday}>Today</Button>
+            <Button variant="outline-primary" onClick={handleNextWeek}>Next Week &rarr;</Button>
+        </div>
+      </div>
 
       <Card style={{ flex: 1, overflow: "hidden" }}>
         <div style={{ display: "grid", gridTemplateColumns: "80px repeat(7, 1fr)", height: "100%" }}>
           
-          <div style={{ marginTop: "40px" }}>
+          <div style={{ marginTop: "10px" }}>
             {hours.map((h) => (
               <div
                 key={h}
@@ -141,7 +140,7 @@ function Home() {
           </div>
 
           {Array.from({ length: 7 }).map((_, i) => {
-            const day = addDays(weekStart, i);
+            const day = addDays(currentWeekStart, i);
 
             return (
               <div key={i} style={{ borderLeft: "1px solid #eee", position: "relative" }}>
