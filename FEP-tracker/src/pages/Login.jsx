@@ -41,6 +41,13 @@ function Login() {
   const handleSignIn = async () => {
     try {
       const result = await signInWithPopup(auth, provider);
+      
+      if (!result.user.email.endsWith("@augustana.edu")) {
+        await signOut(auth);
+        alert("Please use your Augustana school email to sign in.");
+        return; 
+      }
+
       console.log(result, "Result");
     } catch (error) {
       console.error("Sign-In Error:", error);

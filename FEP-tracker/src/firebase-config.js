@@ -24,5 +24,8 @@ const analytics = getAnalytics(app);
 const database = getFirestore(app);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
+provider.setCustomParameters({
+  hd: "augustana.edu"
+});
 
 export { database, auth, provider };
