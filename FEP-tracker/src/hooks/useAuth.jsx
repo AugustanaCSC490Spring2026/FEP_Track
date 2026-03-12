@@ -12,10 +12,10 @@ export default function useAuth() {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         const userRef = doc(database, "users", currentUser.uid);
+        console.log(userRef.role, "User Reference Role");
         const userSnap = await getDoc(userRef);
-        const username = currentUser.email.split("@")[0];
-        const hasNumber = /\d/.test(username);
-        const role = hasNumber ? "student" : "staff";
+        console.log(userSnap.data(), "User Snapshot Data");
+        const role = userSnap.exists() ? userSnap.data().role : null;
         const exists = userSnap.exists();
 
         console.log(
