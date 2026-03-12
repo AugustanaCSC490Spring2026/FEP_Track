@@ -9,7 +9,7 @@ import {
   updateDoc,
   arrayRemove,
 } from "firebase/firestore"
-import { Welcome } from "./Login";
+
 // Every job pays the same hourly rate — change this one number if it ever updates
 const HOURLY_RATE = 10.50
 
@@ -183,7 +183,7 @@ function Dashboard({ user }) {
       <h1 style={{ textAlign: "center", fontSize: "26px", fontWeight: "700", marginBottom: "24px" }}>
         Schedule Dashboard
       </h1>
-      <Welcome  />
+   
       {/* ── TAB BAR ── */}
       <div style={{ display: "flex", borderBottom: "2px solid #ddd", marginBottom: "28px" }}>
         {["currentJobs", "workOverview"].map((tab) => (

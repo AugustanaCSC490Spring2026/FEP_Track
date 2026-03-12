@@ -13,6 +13,11 @@ const navLinks = [
     href: "/profile",
     label: "Account",
     icon: <Person className="me-3" />,
+  },
+  {
+    href: "/logout",
+    label: "Logout",
+    icon: <BoxArrowInRight className="me-3" />,
   }
 ];
 
@@ -27,7 +32,7 @@ export default function Navbar({ user }) {
       <div className="container">
         {/* Logo */}
         <a className="navbar-brand fw-bold" href="/">
-          FEP Tracker
+          {user ? `Welcome, ${user.displayName.split(" ")[0]}!` : "FEP Tracker"}
         </a>
 
         {/* Hamburger button */}

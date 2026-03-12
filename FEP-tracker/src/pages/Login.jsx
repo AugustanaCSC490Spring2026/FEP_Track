@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable no-unused-vars */
 import "../App.css";
 import { useState, useEffect } from "react";
@@ -5,33 +6,27 @@ import { auth, provider, database } from "../firebase-config";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
-import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
+import { signInWithPopup, signOut } from "firebase/auth";
 import useAuth from "../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 
-function Welcome() {
-  const { user, loading } = useAuth();
-  if (loading) return <p>Loading...</p>;
-  if (!user) return null;
-  const handleSignOut = async () => {
-    try {
-      await signOut(auth);
-    } catch (error) {
-      console.error("Sign-Out Error:", error);
-    }
-  };
+function Logout() {
+  const navigate = useNavigate();
 
-  return (
-    <div className="card">
-      <h2>Welcome, {user.displayName}</h2>
-      <p>You are signed in as:</p>
-      <strong>{user.email}</strong>
-      <hr />
-      <Button variant="danger" onClick={handleSignOut}>
-        Sign Out
-      </Button>
-    </div>
-  );
+  useEffect(() => {
+    const handleSignOut = async () => {
+      try {
+        await signOut(auth);
+        navigate("/");  
+      } catch (error) {
+        console.error("Sign-Out Error:", error);
+      }
+    };
+
+    handleSignOut();
+  }, []);
+
+  return <h2>Signing out...</h2>;
 }
 
 function Login() {
@@ -124,4 +119,4 @@ function Login() {
   );
 }
 
-export { Login, Welcome };
+export { Login, Logout };
