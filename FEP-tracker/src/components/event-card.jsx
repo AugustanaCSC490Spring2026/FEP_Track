@@ -2,11 +2,10 @@
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Badge from "react-bootstrap/Badge";
-import { useState } from "react";
 import { useLocation } from "react-router-dom";
 
 export default function EventCard({ event, onCallBack, onEdit, user }) {
-  const [applied, setApplied] = useState(false); //Just a plaveholder for now, will be replaced with actual application logic later
+  //Just a plaveholder for now, will be replaced with actual application logic later
   const filled = event?.students?.length ?? 0;
   const location = useLocation();
   const path = location.pathname;
@@ -117,20 +116,24 @@ export default function EventCard({ event, onCallBack, onEdit, user }) {
             <div className="d-flex align-items-center gap-2 mt-2">
               {path === "/home" && (
                 <Button
-                  variant={applied ? "success" : "primary"}
+                  variant={"primary"}
                   size="sm"
-                  onClick={() => setApplied((a) => !a)}
+                  onClick={() => onCallBack(user.uid, event.id)}
                 >
-                  {applied ? "✅ Applied!" : "Apply Now"}
+                  {filled >= event.student_cap
+                    ? "Full"
+                    : event.students?.includes(user.uid)
+                      ? "Applied!"
+                      : "Apply Now"}
                 </Button>
               )}
               {path === "/profile" && (
                 <Button
-                  variant={applied ? "success" : "primary"}
+                  variant={"success"}
                   size="sm"
-                  onClick={() => setApplied((a) => !a)}
+                  onClick={() => onEdit(user.uid, event.id)}
                 >
-                  {applied ? "✅ Applied!" : "Apply Now"}
+                  
                 </Button>
               )}
             </div>
