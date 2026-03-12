@@ -22,6 +22,7 @@ const ProtectedRoute = ({ user, allowedRoles, children }) => {
 const routes = [
   { path: "/home",       component: Home,     roles: ["any"] },
   { path: "/profile",    component: Profile,  roles: ["any"] }
+
 ];
 
 function App() {
@@ -36,6 +37,7 @@ function App() {
       <Navbar user={user} />
       <Routes>
         <Route path="/" element={<Navigate to={user ? "/home" : "/profile"} />} />
+
         <Route path="/unauthorized" element={<Unauthorized />} />
 
         {routes.map(({ path, component: Component, roles }) => (
