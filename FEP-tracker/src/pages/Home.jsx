@@ -25,7 +25,7 @@ function Home({ user }) {
 
   useEffect(() => {
     const loadEvents = async () => {
-      const snap = await getDocs(collection(database, "events"));
+      const snap = await getDocs(collection(database, "upcoming_events"));
       const data = snap.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
