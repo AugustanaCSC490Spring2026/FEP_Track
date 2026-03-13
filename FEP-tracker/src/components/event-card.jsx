@@ -5,7 +5,6 @@ import Badge from "react-bootstrap/Badge";
 import { useLocation } from "react-router-dom";
 
 export default function EventCard({ event, onCallBack, onEdit, user }) {
-  //Just a plaveholder for now, will be replaced with actual application logic later
   const filled = event?.students?.length ?? 0;
   const location = useLocation();
   const path = location.pathname;
@@ -16,6 +15,10 @@ export default function EventCard({ event, onCallBack, onEdit, user }) {
         "day",
       )
     : null;
+
+  const isFull = filled >= event.student_cap;
+  const hasApplied = event.students?.includes(user?.uid);
+
 
   return (
     <div style={{ maxWidth: 500, margin: "auto", padding: "0 16px" }}>
@@ -28,7 +31,6 @@ export default function EventCard({ event, onCallBack, onEdit, user }) {
           background: "linear-gradient(135deg, yellow, #2563eb)",
         }}
       >
-        {/* Colored top bar */}
         <div
           style={{
             padding: "14px 20px",
@@ -68,7 +70,6 @@ export default function EventCard({ event, onCallBack, onEdit, user }) {
             <strong>Date:</strong> {event.date}
           </Card.Text>
 
-          {/* Progress bar */}
           <div className="mb-3">
             <div style={{ background: "#e9ecef", borderRadius: 99, height: 6 }}>
               <div
@@ -98,7 +99,6 @@ export default function EventCard({ event, onCallBack, onEdit, user }) {
               >
                 Edit
               </Button>
-
               <Button
                 variant="danger"
                 size="sm"
@@ -114,28 +114,30 @@ export default function EventCard({ event, onCallBack, onEdit, user }) {
 
           {user?.role === "student" && (
             <div className="d-flex align-items-center gap-2 mt-2">
-              {path === "/home" && (
+              {(path === "/home" || path === "/") && (
                 <Button
-                  variant={"primary"}
+                  variant={hasApplied ? "success" : isFull ? "secondary" : "primary"}
                   size="sm"
-                  onClick={() => onCallBack(user.uid, event.id)}
+                  disabled={isFull || hasApplied}
+                  onClick={() => {
+                    if (!isFull && !hasApplied) {
+                      onCallBack(user.uid, event.id);
+                    }
+                  }}
                 >
-                  {filled >= event.student_cap
-                    ? "Full"
-                    : event.students?.includes(user.uid)
-                      ? "Applied!"
-                      : "Apply Now"}
+                  {isFull ? "Full" : hasApplied ? "Applied!" : "Apply Now"}
                 </Button>
               )}
+
               {path === "/profile" && (
                 <Button
-                  variant={"success"}
+                  variant="danger"
                   size="sm"
-                  onClick={() => onEdit(user.uid, event.id)}
-                >
-                  
-                </Button>
-              )}
+                  onClick={() => onCallBack(user.uid, event.id)}
+              >
+            Drop
+    </Button>
+  )}
             </div>
           )}
         </Card.Body>
