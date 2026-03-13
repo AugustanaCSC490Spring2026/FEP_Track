@@ -51,5 +51,6 @@ export default function useAuth() {
     "Loading:",
     loading,
   );
+
   return { user, isRegistered, loading, setIsRegistered };
 }
