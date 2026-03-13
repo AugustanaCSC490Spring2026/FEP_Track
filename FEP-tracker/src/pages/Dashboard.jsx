@@ -21,7 +21,7 @@ function Dashboard({ user }) {
     const load = async () => {
       try {
         const jobsQuery = query(
-          collection(database, "events"),
+          collection(database, "upcoming_events"),
           where("students", "array-contains", user.uid)
         )
         const jobsSnap = await getDocs(jobsQuery)
@@ -41,7 +41,7 @@ function Dashboard({ user }) {
   }
 
   const confirmDrop = async (jobId) => {
-    await updateDoc(doc(database, "events", jobId), {
+    await updateDoc(doc(database, "upcoming_events", jobId), {
       students: arrayRemove(user.uid)
     })
     setMyCurrentJobs(prev => prev.filter(j => j.id !== jobId))

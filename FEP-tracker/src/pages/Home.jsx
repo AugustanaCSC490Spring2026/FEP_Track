@@ -38,7 +38,7 @@ function Home({ user }) {
 
   const handleApply = async (uid, eventId) => {
     console.log("handleApply called with:", uid, eventId);
-    await updateDoc(doc(database, "events", eventId), {
+    await updateDoc(doc(database, "upcoming_events", eventId), {
       students: arrayUnion(uid),
     });
     setEvents(prev =>
