@@ -149,18 +149,7 @@ function Dashboard({ user }) {
         fontFamily: "sans-serif",
       }}
     >
-      <div className="text-center mt-3 mb-4">
-        <Button
-          variant={showForm ? "outline-secondary" : "primary"}
-          onClick={() => {
-            setEditingEvent(null);
-            setShowForm(!showForm);
-            resetForm();
-          }}
-        >
-          {showForm ? "Cancel" : "+ Add Event"}
-        </Button>
-      </div>
+    
       {loading ? (
         <p className="text-center text-muted">Loading events...</p>
       ) : events.length === 0 && !showForm ? (
