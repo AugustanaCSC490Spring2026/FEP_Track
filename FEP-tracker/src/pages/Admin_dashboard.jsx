@@ -40,7 +40,7 @@ function Dashboard({ user }) {
   // Load events
   useEffect(() => {
     const load = async () => {
-      const q = query(collection(database, "events"));
+      const q = query(collection(database, "upcoming_events"));
       const snap = await getDocs(q);
       setEvents(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
       setLoading(false);
@@ -82,9 +82,9 @@ function Dashboard({ user }) {
       createdAt: new Date(),
     };
 
-    if (editingEvent) {                    // ⭐ CHANGE: UPDATE EXISTING EVENT
+    if (editingEvent) {
       await updateDoc(
-        doc(database, "events", editingEvent.id),
+        doc(database, "upcoming_events", editingEvent.id),
         eventData
       );
   
@@ -95,7 +95,7 @@ function Dashboard({ user }) {
       );
   
     } else { 
-      const newDoc = await addDoc(collection(database, "events"), eventData);
+      const newDoc = await addDoc(collection(database, "upcoming_events"), eventData);
 
       setEvents((prev) => [
         ...prev,
@@ -119,7 +119,7 @@ function Dashboard({ user }) {
   };
 
   const deleteEvent = async (id) => {
-    await deleteDoc(doc(database, "events", id));
+    await deleteDoc(doc(database, "upcoming_events", id));
     setEvents((prev) => prev.filter((e) => e.id !== id));
   };
 
@@ -143,33 +143,76 @@ function Dashboard({ user }) {
   return (
     <div
       style={{
-        maxWidth: "680px",
+        maxWidth: "1200px",
         margin: "auto",
-        padding: "30px 16px",
+        padding: "40px 20px",
         fontFamily: "sans-serif",
       }}
     >
-      <div className="text-center mt-3 mb-4">
-        <Button
-          variant={showForm ? "outline-secondary" : "primary"}
-          onClick={() => {
-            setEditingEvent(null);
-            setShowForm(!showForm);
-            resetForm();
-          }}
-        >
-          {showForm ? "Cancel" : "+ Add Event"}
-        </Button>
-      </div>
-      {loading ? (
-        <p className="text-center text-muted">Loading events...</p>
-      ) : events.length === 0 && !showForm ? (
-        <p className="text-center text-muted">No events yet. Add one below!</p>
-      ) : (
-        events.map((event) => (
-          <EventCard key={event.id} event={event} onCallBack={deleteEvent} onEdit={handleEditEvent} user={user} />
-        ))
-      )}
+      <Row className="g-4"> 
+        {/* LEFT COLUMN: Controls & Branding */}
+        <Col lg={4} md={5} className="d-flex flex-column align-items-start">
+          <div className="sticky-top" style={{ top: "40px" }}>
+            <h2 style={{ color: "var(--color-primary-blue-light)", fontWeight: "700" }}>
+              Admin Dashboard
+            </h2>
+            <p style={{ color: "var(--color-text-secondary)", marginBottom: "2rem" }}>
+              Welcome back, {user.displayName}. Use the button below to schedule new upcoming events.
+            </p>
+            
+            <Button
+              variant={showForm ? "outline-secondary" : "primary"}
+              className="w-100 py-2 shadow-sm"
+              onClick={() => {
+                setEditingEvent(null);
+                setShowForm(!showForm);
+                resetForm();
+              }}
+              style={{
+                backgroundColor: showForm ? "transparent" : "var(--color-primary-blue)",
+                borderColor: "var(--color-primary-blue-light)"
+              }}
+            >
+              {showForm ? "✕ Cancel" : "+ Create New Event"}
+            </Button>
+            
+            <div className="mt-4 p-3 rounded" style={{ backgroundColor: "var(--color-bg-darker)", width: "100%" }}>
+               <small style={{ color: "var(--color-text-secondary)" }}>
+                 Active Events: <strong>{events.length}</strong>
+               </small>
+            </div>
+          </div>
+        </Col>
+
+        {/* RIGHT COLUMN: The Scrollable List */}
+        <Col lg={8} md={7}>
+          <h4 className="mb-3" style={{ color: "var(--color-text-primary)" }}>Upcoming Jobs</h4>
+          
+          {loading ? (
+            <p className="text-center text-muted">Loading events...</p>
+          ) : (
+            <div className="event-scroll-container">
+              {events.length === 0 && !showForm ? (
+                <div className="text-center py-5">
+                   <p style={{ color: "var(--color-text-secondary)" }}>
+                     No events found in the database.
+                   </p>
+                </div>
+              ) : (
+                events.map((event) => (
+                  <EventCard 
+                    key={event.id} 
+                    event={event} 
+                    onCallBack={deleteEvent} 
+                    onEdit={handleEditEvent} 
+                    user={user} 
+                  />
+                ))
+              )}
+            </div>
+          )}
+        </Col>
+      </Row>
 
 
       <Modal show={showForm} onHide={() => setShowForm(false)} centered size="lg">
