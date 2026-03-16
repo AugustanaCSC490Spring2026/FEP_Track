@@ -37,6 +37,12 @@ function Dashboard({ user }) {
   const [studentCap, setStudentCap] = useState(999);
   const [date, setDate] = useState("");
 
+  const [filter, setFilter] = useState("All");
+  const [searchTitle, setSearchTitle] = useState("");
+  const [filterBuilding, setFilterBuilding] = useState("All");
+  const [filterSupervisor, setFilterSupervisor] = useState("All");
+  const [filterAvailability, setFilterAvailability] = useState("All");
+
   // Load events
   useEffect(() => {
     const load = async () => {
@@ -140,6 +146,21 @@ function Dashboard({ user }) {
     setShowForm(true);
   };
 
+  const filteredEvents = events.filter((event) => {
+    const matchesTitle = event.title.toLowerCase().includes(searchTitle.toLowerCase());
+    const matchesBuilding = filterBuilding === "All" || event.location === filterBuilding;
+    const matchesSupervisor = filterSupervisor === "All" || event.supervisor === filterSupervisor;
+    const studentCount = event.students?.length || 0;
+    const isFull = studentCount >= event.student_cap;
+
+    const matchesAvailability = 
+      filterAvailability === "All" || 
+      (filterAvailability === "Full" && isFull) || 
+      (filterAvailability === "Available" && !isFull);
+  
+    return matchesTitle && matchesBuilding && matchesSupervisor && matchesAvailability;
+  });
+
   return (
     <div
       style={{
@@ -152,34 +173,115 @@ function Dashboard({ user }) {
       <Row className="g-4"> 
         {/* LEFT COLUMN: Controls & Branding */}
         <Col lg={4} md={5} className="d-flex flex-column align-items-start">
-          <div className="sticky-top" style={{ top: "40px" }}>
-            <h2 style={{ color: "var(--color-primary-blue-light)", fontWeight: "700" }}>
-              Admin Dashboard
-            </h2>
-            <p style={{ color: "var(--color-text-secondary)", marginBottom: "2rem" }}>
-              Welcome back, {user.displayName}. Use the button below to schedule new upcoming events.
-            </p>
+          <div className="sticky-top" style={{ top: "20px", width: "100%" }}>
+            <div className="mb-4">
+              <h2 style={{ color: "var(--color-primary-blue-light)", fontWeight: "700", marginBottom: "5px" }}>
+                Admin Dashboard
+              </h2>
+              <p style={{ color: "var(--color-text-secondary)", fontSize: "0.95rem", lineHeight: "1.4" }}>
+                Welcome back, <strong>{user.displayName || "Admin"}</strong>. 
+                Manage, track, and schedule upcoming student jobs from this panel.
+              </p>
+            </div>
             
             <Button
               variant={showForm ? "outline-secondary" : "primary"}
-              className="w-100 py-2 shadow-sm"
+              className="w-100 py-2 mb-3 shadow-sm"
               onClick={() => {
                 setEditingEvent(null);
                 setShowForm(!showForm);
                 resetForm();
               }}
-              style={{
-                backgroundColor: showForm ? "transparent" : "var(--color-primary-blue)",
-                borderColor: "var(--color-primary-blue-light)"
-              }}
             >
               {showForm ? "✕ Cancel" : "+ Create New Event"}
             </Button>
-            
-            <div className="mt-4 p-3 rounded" style={{ backgroundColor: "var(--color-bg-darker)", width: "100%" }}>
-               <small style={{ color: "var(--color-text-secondary)" }}>
-                 Active Events: <strong>{events.length}</strong>
-               </small>
+
+            {/* Filter Box */}
+            <div className="p-3 rounded shadow-sm" style={{ backgroundColor: "var(--color-bg-darker)", border: "1px solid #334155" }}>
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <small style={{ color: "var(--color-text-secondary)" }}>
+                  Active Jobs: <strong>{events.length}</strong>
+                </small>
+                <Button 
+                  variant="link" 
+                  size="sm" 
+                  className="p-0 text-decoration-none" 
+                  style={{ color: "var(--color-accent-yellow)", fontSize: "0.75rem" }}
+                  onClick={() => {
+                    setSearchTitle("");
+                    setFilterBuilding("All");
+                    setFilterSupervisor("All");
+                    setFilterAvailability("All");
+                  }}
+                >
+                  Reset
+                </Button>
+              </div>
+
+              <Form>
+                {/* Search Title */}
+                <Form.Group className="mb-3">
+                  <Form.Label className="small text-uppercase" style={{ color: "var(--color-text-secondary)", fontSize: "0.7rem" }}>Search Title</Form.Label>
+                  <Form.Control 
+                    size="sm"
+                    type="text" 
+                    placeholder="Type to search..." 
+                    value={searchTitle}
+                    onChange={(e) => setSearchTitle(e.target.value)}
+                    style={{ backgroundColor: "var(--color-bg-card)", color: "white", border: "1px solid #475569" }}
+                  />
+                </Form.Group>
+
+                {/* Building Filter */}
+                <Form.Group className="mb-3">
+                  <Form.Label className="small text-uppercase" style={{ color: "var(--color-text-secondary)", fontSize: "0.7rem" }}>Building</Form.Label>
+                  <Form.Select 
+                    size="sm" 
+                    value={filterBuilding}
+                    onChange={(e) => setFilterBuilding(e.target.value)}
+                    style={{ backgroundColor: "var(--color-bg-card)", color: "white", border: "1px solid #475569" }}
+                  >
+                    <option value="All">All Buildings</option>
+                    {[...new Set(events.map(e => e.location))].map(loc => (
+                      <option key={loc} value={loc}>{loc}</option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+
+                {/* Supervisor Filter */}
+                <Form.Group className="mb-3">
+                  <Form.Label className="small text-uppercase" style={{ color: "var(--color-text-secondary)", fontSize: "0.7rem" }}>Supervisor</Form.Label>
+                  <Form.Select 
+                    size="sm" 
+                    value={filterSupervisor}
+                    onChange={(e) => setFilterSupervisor(e.target.value)}
+                    style={{ backgroundColor: "var(--color-bg-card)", color: "white", border: "1px solid #475569" }}
+                  >
+                    <option value="All">All Supervisors</option>
+                    {[...new Set(events.map(e => e.supervisor))].map(sup => (
+                      <option key={sup} value={sup}>{sup}</option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+
+                {/* Availability Toggle */}
+                <Form.Group>
+                  <Form.Label className="small text-uppercase" style={{ color: "var(--color-text-secondary)", fontSize: "0.7rem" }}>Availability</Form.Label>
+                  <div className="d-flex gap-2">
+                    {["All", "Open", "Full"].map((status) => (
+                      <Button
+                        key={status}
+                        size="sm"
+                        variant={filterAvailability === status ? "primary" : "outline-secondary"}
+                        onClick={() => setFilterAvailability(status)}
+                        style={{ fontSize: "0.7rem", flex: 1 }}
+                      >
+                        {status}
+                      </Button>
+                    ))}
+                  </div>
+                </Form.Group>
+              </Form>
             </div>
           </div>
         </Col>
@@ -192,14 +294,12 @@ function Dashboard({ user }) {
             <p className="text-center text-muted">Loading events...</p>
           ) : (
             <div className="event-scroll-container">
-              {events.length === 0 && !showForm ? (
+              {filteredEvents.length === 0 ? (
                 <div className="text-center py-5">
-                   <p style={{ color: "var(--color-text-secondary)" }}>
-                     No events found in the database.
-                   </p>
+                  <p style={{ color: "var(--color-text-secondary)" }}>No jobs match your filters.</p>
                 </div>
               ) : (
-                events.map((event) => (
+                filteredEvents.map((event) => (
                   <EventCard 
                     key={event.id} 
                     event={event} 
