@@ -36,7 +36,7 @@ function Dashboard({ user }) {
   const [extraInfo, setExtraInfo] = useState("");
   const [studentCap, setStudentCap] = useState(999);
   const [date, setDate] = useState("");
-
+  const [students, setStudents] = useState([]);
   const [filter, setFilter] = useState("All");
   const [searchTitle, setSearchTitle] = useState("");
   const [filterBuilding, setFilterBuilding] = useState("All");
@@ -48,7 +48,10 @@ function Dashboard({ user }) {
     const load = async () => {
       const q = query(collection(database, "upcoming_events"));
       const snap = await getDocs(q);
-      setEvents(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      const sortedEvents = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => b.createdAt - a.createdAt); // Newest first
+      setEvents(sortedEvents);
       setLoading(false);
     };
     load();
@@ -77,14 +80,15 @@ function Dashboard({ user }) {
     }
     const eventData = {
       title,
-      time: `${startTime} – ${endTime}`,
+      startTime,
+      endTime,
       supervisor: supervisor || "TBD",
       extra_details: extraInfo || "TBD",
       createdBy: user.displayName,
       location: location || "TBD",
       student_cap: studentCap,
       date: date || "TBD",
-      students: [],
+      students,
       createdAt: new Date(),
     };
 
@@ -108,13 +112,15 @@ function Dashboard({ user }) {
         {
           id: newDoc.id,
           title,
-          time: `${startTime} – ${endTime}`,
+          startTime,
+          endTime,
           supervisor: supervisor || "TBD",
           extra_details: extraInfo || "TBD",
           location: location || "TBD",
           student_cap: studentCap,
           date: date || "TBD",
           createdAt: new Date(),
+          students: [],
         },
       ]);
     }
@@ -131,18 +137,15 @@ function Dashboard({ user }) {
 
   const handleEditEvent = (event) => {
     setEditingEvent(event);
-  
+    setStudents(event.students || []);
     setTitle(event.title);
     setLocation(event.location);
     setSupervisor(event.supervisor);
     setDate(event.date);
     setStudentCap(event.student_cap);
     setExtraInfo(event.extra_details);
-
-    const [start, end] = event.time.split(" – ");
-    setStartTime(start);
-    setEndTime(end);
-  
+    setStartTime(event.startTime);
+    setEndTime(event.endTime);
     setShowForm(true);
   };
 

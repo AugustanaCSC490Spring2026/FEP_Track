@@ -18,8 +18,21 @@ export default function EventCard({ event, onCallBack, onEdit, user,onApply }) {
 
   const isFull = filled >= event.student_cap;
   const hasApplied = event.students?.includes(user?.uid);
+  const startTime = timeFormat(event.startTime) || null;
+  const endTime = timeFormat(event.endTime) || "TBD";
 
 
+  function timeFormat(time) {
+    let hours = 0;
+    let ampm = "";
+
+  if (time) {
+    const date = new Date(`1970-01-01T${time}:00`);
+    hours = date.getHours();
+    ampm = hours >= 12 ? 'PM' : 'AM';
+  }
+  return `${((hours + 11) % 12 + 1)}:00 ${ampm}`;
+  }
   return (
     <div style={{ maxWidth: 500, margin: "auto", padding: "0 16px" }}>
       <Card
@@ -28,7 +41,7 @@ export default function EventCard({ event, onCallBack, onEdit, user,onApply }) {
           border: "none",
           borderRadius: 16,
           padding: 0,
-          background: "linear-gradient(135deg, yellow, #2563eb)",
+          background: "#0d6efd",
         }}
       >
         <div
@@ -48,7 +61,8 @@ export default function EventCard({ event, onCallBack, onEdit, user,onApply }) {
             📍 {event.location}
           </Badge>
           <span style={{ color: "rgba(255,255,255,0.85)", fontSize: 12 }}>
-            🕐 {event.time}
+              Time: {startTime} - {endTime} <br/>
+             <strong>Date:</strong> {event.date}
           </span>
         </div>
 
@@ -67,7 +81,7 @@ export default function EventCard({ event, onCallBack, onEdit, user,onApply }) {
           <Card.Text className="text-muted mb-3" style={{ fontSize: 13 }}>
             <strong>Student Limit:</strong> {filled}/{event.student_cap}
             &nbsp;·&nbsp;
-            <strong>Date:</strong> {event.date}
+           
           </Card.Text>
 
           <div className="mb-3">
@@ -149,6 +163,7 @@ export default function EventCard({ event, onCallBack, onEdit, user,onApply }) {
           >
             <span>Created {timeAgo}</span>
             <span>Created by {event.createdBy}</span>
+            {/* The name shows in firsore but not in here for osme reason */}
           </Card.Footer>
         )}
       </Card>
