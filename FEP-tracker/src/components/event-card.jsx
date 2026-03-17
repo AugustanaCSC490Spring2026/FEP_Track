@@ -4,7 +4,7 @@ import Card from "react-bootstrap/Card";
 import Badge from "react-bootstrap/Badge";
 import { useLocation } from "react-router-dom";
 
-export default function EventCard({ event, onCallBack, onEdit, user }) {
+export default function EventCard({ event, onCallBack, onEdit, user,onApply }) {
   const filled = event?.students?.length ?? 0;
   const location = useLocation();
   const path = location.pathname;
@@ -121,7 +121,7 @@ export default function EventCard({ event, onCallBack, onEdit, user }) {
                   disabled={isFull || hasApplied}
                   onClick={() => {
                     if (!isFull && !hasApplied) {
-                      onCallBack(user.uid, event.id);
+                      onApply(user.uid, event.id);
                     }
                   }}
                 >

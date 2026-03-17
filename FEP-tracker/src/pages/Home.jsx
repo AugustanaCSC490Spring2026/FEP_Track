@@ -252,7 +252,7 @@ const deleteEvent = async (id) => {
       {selectedEvent && (
         <div onClick={() => setSelectedEvent(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
           <div onClick={e => e.stopPropagation()} style={{ width: "100%", maxWidth: 540 }}>
-            <EventCard event={selectedEvent} user={user} onCallBack={deleteEvent} onEdit={handleEditEvent} onApply={()=> handleApply(user.id,selectedEvent.id)}/>
+            <EventCard event={selectedEvent} user={user} onCallBack={deleteEvent} onEdit={handleEditEvent} onApply={()=> handleApply(user.uid,selectedEvent.id)}/>
             <div style={{ textAlign: "center", marginTop: 8 }}>
               <button onClick={() => setSelectedEvent(null)} style={{ background: "white", border: "none", borderRadius: 8, padding: "6px 20px", cursor: "pointer", fontSize: 13, color: "#555" }}>Close</button>
             </div>
