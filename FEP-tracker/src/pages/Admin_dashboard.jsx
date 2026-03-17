@@ -268,7 +268,7 @@ function Dashboard({ user }) {
                 <Form.Group>
                   <Form.Label className="small text-uppercase" style={{ color: "var(--color-text-secondary)", fontSize: "0.7rem" }}>Availability</Form.Label>
                   <div className="d-flex gap-2">
-                    {["All", "Open", "Full"].map((status) => (
+                    {["All", "Available", "Full"].map((status) => (
                       <Button
                         key={status}
                         size="sm"
