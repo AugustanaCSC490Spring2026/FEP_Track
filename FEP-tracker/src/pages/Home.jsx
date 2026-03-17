@@ -271,9 +271,13 @@ const deleteEvent = async (id) => {
           <span>Week of {format(currentWeekStart, "MMMM do, yyyy")}</span>
         </div>
         <div className="d-flex gap-2">
-          <Button variant="primary" onClick={() => { setEditingEvent(null); resetForm(); setShowForm(true); }}>
-            + Add Event
-          </Button>
+          {user?.role === "staff" && (
+            <div>
+              <Button variant="primary" onClick={() => { setEditingEvent(null); resetForm(); setShowForm(true); }}>
+                + Add Event
+              </Button>
+            </div>
+            )}
           <Button variant="outline-primary" onClick={handleNextWeek}>Next Week &rarr;</Button>
         </div>
       </div>
