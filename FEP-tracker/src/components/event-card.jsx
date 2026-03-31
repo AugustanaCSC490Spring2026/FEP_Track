@@ -3,8 +3,16 @@ import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Badge from "react-bootstrap/Badge";
 import { useLocation } from "react-router-dom";
+import Row from "react-bootstrap/esm/Row";
+import Col from "react-bootstrap/esm/Col";
 
-export default function EventCard({ event, onCallBack, onEdit, user,onApply }) {
+export default function EventCard({
+  event,
+  onCallBack,
+  onEdit,
+  user,
+  onApply,
+}) {
   const filled = event?.students?.length ?? 0;
   const location = useLocation();
   const path = location.pathname;
@@ -21,27 +29,26 @@ export default function EventCard({ event, onCallBack, onEdit, user,onApply }) {
   const startTime = timeFormat(event.startTime) || null;
   const endTime = timeFormat(event.endTime) || "TBD";
 
-
   function timeFormat(time) {
     let hours = 0;
     let ampm = "";
 
-  if (time) {
-    const date = new Date(`1970-01-01T${time}:00`);
-    hours = date.getHours();
-    ampm = hours >= 12 ? 'PM' : 'AM';
-  }
-  return `${((hours + 11) % 12 + 1)}:00 ${ampm}`;
+    if (time) {
+      const date = new Date(`1970-01-01T${time}:00`);
+      hours = date.getHours();
+      ampm = hours >= 12 ? "PM" : "AM";
+    }
+    return `${((hours + 11) % 12) + 1}:00 ${ampm}`;
   }
   return (
-    <div style={{ maxWidth: 500, margin: "auto", padding: "0 16px" }}>
+    <div style={{ maxWidth: 400, margin: "auto", padding: "0 16px" }}>
       <Card
         className="mb-3 shadow-sm overflow-hidden"
         style={{
           border: "none",
           borderRadius: 16,
           padding: 0,
-          background: "#0d6efd",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
         }}
       >
         <div
@@ -50,6 +57,7 @@ export default function EventCard({ event, onCallBack, onEdit, user,onApply }) {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
+            background: "linear-gradient(90deg, #2563eb, #60a5fa)",
           }}
         >
           <Badge
@@ -61,28 +69,31 @@ export default function EventCard({ event, onCallBack, onEdit, user,onApply }) {
             📍 {event.location}
           </Badge>
           <span style={{ color: "rgba(255,255,255,0.85)", fontSize: 12 }}>
-              Time: {startTime} - {endTime} <br/>
-             <strong>Date:</strong> {event.date}
+            Time: {startTime} - {endTime} <br />
+            <strong>Date:</strong> {event.date}
           </span>
         </div>
 
         <Card.Body style={{ background: "#f8f9fa" }} className="px-4 pt-3 pb-2">
           <Card.Title
-            className="mb-1"
+            className="mb-2"
             style={{ fontSize: 18, fontWeight: 700 }}
           >
             {event.title}
           </Card.Title>
-
-          <Card.Text className="text-muted mb-1" style={{ fontSize: 13 }}>
-            <strong>Supervisor:</strong> {event.supervisor}
-          </Card.Text>
-
-          <Card.Text className="text-muted mb-3" style={{ fontSize: 13 }}>
-            <strong>Student Limit:</strong> {filled}/{event.student_cap}
-            &nbsp;·&nbsp;
-           
-          </Card.Text>
+          <Row className="mb-2">
+            <Col xs="auto">
+              <Card.Text className="text-muted mb-3" style={{ fontSize: 13 }}>
+                <strong>Student Limit:</strong> {filled}/{event.student_cap}
+                &nbsp;·&nbsp;
+              </Card.Text>
+            </Col>
+            <Col>
+              <Card.Text className="text-muted mb-1" style={{ fontSize: 13 }}>
+                <strong>Supervisor:</strong> {event.supervisor}
+              </Card.Text>
+            </Col>
+          </Row>
 
           <div className="mb-3">
             <div style={{ background: "#e9ecef", borderRadius: 99, height: 6 }}>
@@ -130,7 +141,9 @@ export default function EventCard({ event, onCallBack, onEdit, user,onApply }) {
             <div className="d-flex align-items-center gap-2 mt-2">
               {(path === "/home" || path === "/") && (
                 <Button
-                  variant={hasApplied ? "success" : isFull ? "secondary" : "primary"}
+                  variant={
+                    hasApplied ? "success" : isFull ? "secondary" : "primary"
+                  }
                   size="sm"
                   disabled={isFull || hasApplied}
                   onClick={() => {
@@ -148,10 +161,10 @@ export default function EventCard({ event, onCallBack, onEdit, user,onApply }) {
                   variant="danger"
                   size="sm"
                   onClick={() => onCallBack(user.uid, event.id)}
-              >
-            Drop
-    </Button>
-  )}
+                >
+                  Drop
+                </Button>
+              )}
             </div>
           )}
         </Card.Body>

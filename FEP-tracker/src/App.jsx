@@ -4,6 +4,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Profile from "./pages/Profile";
 import Home from "./pages/Home";
+import { Logout } from './pages/Login';
 import Unauthorized from "./pages/Unauthorized";
 import Navbar from "./components/nav";
 import useAuth from "./hooks/useAuth";
@@ -22,7 +23,8 @@ const ProtectedRoute = ({ user, allowedRoles, children }) => {
 const routes = [
   { path: "/home",       component: Home,     roles: ["any"] },
   { path: "/profile",    component: Profile,  roles: ["any"] },
-  { path: "/students",   component: Students, roles: ["any"] }
+  { path: "/students",   component: Students, roles: ["any"] },
+  {path: "/logout",     component: Logout,  roles: ["any"] },
 
 ];
 
