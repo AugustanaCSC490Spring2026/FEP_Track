@@ -195,7 +195,7 @@ const deleteEvent = async (id) => {
 
   const hours = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => i + START_HOUR);
 
-  if (loading) return <p className="text-center mt-5">Loading events...</p>;
+  if (loading) return <p className="text-center mt-5">Loading ...</p>;
 
 // create event modal
   return (
@@ -267,7 +267,7 @@ const deleteEvent = async (id) => {
           <Button variant="outline-secondary" onClick={handleToday}>Today</Button>
         </div>
         <div className="text-center">
-          <h2 className="mb-0">All Jobs</h2>
+          <h2 className="mb-0">Schedule</h2>
           <span>Week of {format(currentWeekStart, "MMMM do, yyyy")}</span>
         </div>
         <div className="d-flex gap-2">

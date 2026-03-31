@@ -1,13 +1,13 @@
-/* eslint-disable no-unused-vars */
 import './App.css'
+import { useState, useEffect } from "react";
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Profile from "./pages/Profile";
 import Home from "./pages/Home";
 import Unauthorized from "./pages/Unauthorized";
 import Navbar from "./components/nav";
 import useAuth from "./hooks/useAuth";
-import {  Logout } from "./pages/Login";
+import Students from './pages/students';
 const ProtectedRoute = ({ user, allowedRoles, children }) => {
   console.log("ProtectedRoute - User:", user, "Allowed Roles:", allowedRoles);
   if (!user && !allowedRoles.includes("any")) {
@@ -22,7 +22,8 @@ const ProtectedRoute = ({ user, allowedRoles, children }) => {
 const routes = [
   { path: "/home",       component: Home,     roles: ["any"] },
   { path: "/profile",    component: Profile,  roles: ["any"] },
-  { path: "/logout",      component: Logout,    roles: ["any"] },
+  { path: "/students",   component: Students, roles: ["any"] }
+
 ];
 
 function App() {
@@ -39,6 +40,7 @@ function App() {
         <Route path="/" element={<Navigate to={user ? "/home" : "/profile"} />} />
 
         <Route path="/unauthorized" element={<Unauthorized />} />
+
         {routes.map(({ path, component: Component, roles }) => (
           <Route
             key={path}

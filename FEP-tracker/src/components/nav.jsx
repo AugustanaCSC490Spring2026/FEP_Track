@@ -7,8 +7,14 @@ import {
   Gear,
 } from "react-bootstrap-icons";
 /* There is no need for a login seperate page it should be built on to the a profile page */
+
 const navLinks = [
   { href: "/", label: "Home", icon: <House className="me-3" /> },
+  {
+      href : "/students",
+      label : "students",
+      icon : <Gear className="me-3"/>
+  },
   {
     href: "/profile",
     label: "Account",
