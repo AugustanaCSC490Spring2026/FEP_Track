@@ -4,13 +4,57 @@ import {
   collection,
   getDocs,
   updateDoc,
-  doc
+  doc,
+  addDoc
 } from "firebase/firestore";
+import Papa from "papaparse"
 import Table from "react-bootstrap/Table";
 import Button from "react-bootstrap/Button";
 import Badge from "react-bootstrap/Badge";
+import Form from "react-bootstrap/Form"
 
 function Students() {
+  const handleCSVUpload = (e) => {
+    const file = e.target.files[0];
+
+    if (!file) return;
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+
+        console.log("Parsed CSV:", results.data);
+
+        const newStudents = [];
+
+        for (const row of results.data) {
+          if (!row.email) continue;
+
+          const newStudent = {
+            name: row.name || "N/A",
+            email: row.email,
+            role: "pending"
+          };
+
+          try {
+            const docRef = await addDoc(collection(database, "users"), newStudent);
+
+            newStudents.push({
+              id: docRef.id,
+              ...newStudent
+            });
+
+          } catch (err) {
+            console.error("Error adding student:", err);
+          }
+        }
+
+        // update UI immediately
+        setStudents(prev => [...prev, ...newStudents]);
+      }
+    });
+  };
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -42,8 +86,11 @@ function Students() {
   if (loading) return <p className="text-center mt-4">Loading students...</p>;
 
   return (
+    
     <div style={{ maxWidth: "900px", margin: "auto", padding: "20px" }}>
-      <h2 className="mb-4 text-center">Manage Students</h2>
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <Button variant="primary" onClick={handleCSVUpload} >Import Many Students (CSV)</Button>
+        </div>
       <Table striped bordered hover responsive>
         <thead>
           <tr>
@@ -66,7 +113,7 @@ function Students() {
               </td>
               <td>
                 <Badge bg={student.role === "student" ? "success" : "secondary"}>
-                  {student.role === "student" ? "Approved" : "Pending"}
+                  {student.role === "student" ? "Approved" : ""}
                 </Badge>
               </td>
               <td>
