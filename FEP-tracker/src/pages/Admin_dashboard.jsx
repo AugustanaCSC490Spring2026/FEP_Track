@@ -10,6 +10,7 @@ import {
   deleteDoc,
   doc,
   updateDoc,
+  orderBy,
 } from "firebase/firestore";
 /* ------- */
 import EventCard from "../components/event-card";
@@ -19,6 +20,7 @@ import Form from "react-bootstrap/Form";
 import Card from "react-bootstrap/Card";
 import Row from "react-bootstrap/Row";
 import Modal from "react-bootstrap/Modal";
+import ButtonGroup from "react-bootstrap/ButtonGroup";
 
 
 function Dashboard({ user }) {
@@ -43,19 +45,43 @@ function Dashboard({ user }) {
   const [filterSupervisor, setFilterSupervisor] = useState("All");
   const [filterAvailability, setFilterAvailability] = useState("All");
 
+  const [currentTab, setCurrentTab] = useState("Upcoming"); 
+  
+  const collectionMap = {
+    "Upcoming": "upcoming_events",
+    "Pending Approval": "pending_events",
+    "Completed": "completed_events",
+  };
+  const tabNames = Object.keys(collectionMap);
+
   // Load events
   useEffect(() => {
     const load = async () => {
-      const q = query(collection(database, "upcoming_events"));
-      const snap = await getDocs(q);
-      const sortedEvents = snap.docs
-        .map((d) => ({ id: d.id, ...d.data() }))
-        .sort((a, b) => b.createdAt - a.createdAt); // Newest first
-      setEvents(sortedEvents);
-      setLoading(false);
+      setLoading(true); // Start loading when tab changes
+      
+      // 1. DYNAMICALLY GET THE COLLECTION NAME
+      const collectionName = collectionMap[currentTab]; // Use the mapping defined above
+      
+      // 2. QUERY THAT SPECIFIC COLLECTION
+      // Note: This requires an index on 'createdAt' (Descending) in Firestore for THIS collection.
+      const q = query(
+        collection(database, collectionName),
+        orderBy("createdAt", "desc")
+      );
+
+      try {
+        const snap = await getDocs(q);
+        const fetchedEvents = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        setEvents(fetchedEvents);
+      } catch (error) {
+        // It's good practice to add error handling here
+        console.error("Error fetching events from collection:", collectionName, error);
+      } finally {
+        setLoading(false);
+      }
     };
     load();
-  }, [user.uid]);
+  }, [user.uid, currentTab]);
 
   const resetForm = () => {
     setTitle("");
@@ -291,22 +317,43 @@ function Dashboard({ user }) {
 
         {/* RIGHT COLUMN: The Scrollable List */}
         <Col lg={8} md={7}>
-          <h4 className="mb-3" style={{ color: "var(--color-text-primary)" }}>Upcoming Jobs</h4>
+          <div className="mb-4 d-flex justify-content-between align-items-center">
+            <ButtonGroup>
+              {tabNames.map((tab) => (
+                <Button
+                  key={tab}
+                  // Highlight the active tab
+                  variant={currentTab === tab ? "primary" : "outline-primary"}
+                  onClick={() => setCurrentTab(tab)}
+                  style={{ fontWeight: currentTab === tab ? "600" : "400" }}
+                >
+                  {tab} Jobs
+                </Button>
+              ))}
+            </ButtonGroup>
+          </div>
           
           {loading ? (
-            <p className="text-center text-muted">Loading events...</p>
+            // Update loading text
+            <p className="text-center text-muted">Loading {currentTab.toLowerCase()} jobs...</p>
           ) : (
             <div className="event-scroll-container">
               {filteredEvents.length === 0 ? (
-                <div className="text-center py-5">
-                  <p style={{ color: "var(--color-text-secondary)" }}>No jobs match your filters.</p>
+                // Update empty state text
+                <div className="text-center py-5 rounded" style={{ backgroundColor: "var(--color-bg-darker)", border: "1px solid #334155" }}>
+                  <p style={{ color: "var(--color-text-secondary)" }}>No {currentTab.toLowerCase()} jobs match your filters.</p>
                 </div>
               ) : (
                 filteredEvents.map((event) => (
                   <EventCard 
                     key={event.id} 
                     event={event} 
-                    onCallBack={deleteEvent} 
+                    // The delete function will now correctly map to the current collection
+                    onCallBack={async (id) => {
+                        const collectionName = collectionMap[currentTab];
+                        await deleteDoc(doc(database, collectionName, id));
+                        setEvents((prev) => prev.filter((e) => e.id !== id));
+                    }}
                     onEdit={handleEditEvent} 
                     user={user} 
                   />
