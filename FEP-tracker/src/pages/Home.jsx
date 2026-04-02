@@ -9,10 +9,13 @@ import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import EventCard from "../components/event-card";
+import { GoogleAuthProvider, reauthenticateWithPopup } from "firebase/auth";
+import { auth } from "../firebase-config";
 
 function Home({ user }) {
   const [events, setEvents] = useState([]);
   const [googleEvents, setGoogleEvents] = useState([]);
+  const [showGoogleCalendar, setShowGoogleCalendar] = useState(false);
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState(null);
 
@@ -74,10 +77,37 @@ function Home({ user }) {
   }, []);
 
   useEffect(() => {
-    const fetchGoogleCalendar = async () => {
-      const token = sessionStorage.getItem("google_access_token");
-      if (!token || !user) return;
+    // 1. EXIT EARLY: If toggle is off or no user, clear events and stop
+    if (!showGoogleCalendar || !user) {
+      setGoogleEvents([]);
+      return;
+    }
 
+    const fetchGoogleCalendar = async () => {
+      let token = sessionStorage.getItem("google_access_token");
+
+      // 2. TOKEN CHECK/REFRESH: If no token, get a fresh one
+      if (!token) {
+        try {
+          const provider = new GoogleAuthProvider();
+          provider.addScope('https://www.googleapis.com/auth/calendar.events.readonly');
+          
+          // This ensures the user is still "linked" to Google
+          const result = await reauthenticateWithPopup(auth.currentUser, provider);
+          const credential = GoogleAuthProvider.credentialFromResult(result);
+          token = credential.accessToken;
+          
+          if (token) {
+            sessionStorage.setItem("google_access_token", token);
+          }
+        } catch (error) {
+          console.error("Token refresh failed:", error);
+          setShowGoogleCalendar(false); // Turn toggle off if they cancel the popup
+          return;
+        }
+      }
+
+      // 3. THE ACTUAL FETCH: (Your existing logic)
       const timeMin = currentWeekStart.toISOString();
       const timeMax = addDays(currentWeekStart, 7).toISOString();
 
@@ -86,8 +116,15 @@ function Home({ user }) {
           `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
+        
         const data = await response.json();
         
+        // If the token was "old" but still in sessionStorage, the API might return a 401
+        if (data.error?.code === 401) {
+          sessionStorage.removeItem("google_access_token"); // Clear it so next toggle refreshes
+          return;
+        }
+
         const formatted = (data.items || []).map(item => {
           const start = new Date(item.start.dateTime || item.start.date);
           const end = new Date(item.end.dateTime || item.end.date);
@@ -101,6 +138,7 @@ function Home({ user }) {
             color: GOOGLE_COLORS[item.colorId] || DEFAULT_GOOGLE_COLOR
           };
         });
+
         setGoogleEvents(formatted);
       } catch (err) {
         console.error("Google Calendar fetch failed", err);
@@ -108,7 +146,9 @@ function Home({ user }) {
     };
 
     fetchGoogleCalendar();
-  }, [currentWeekStart, user]);
+    
+    // 4. DEPENDENCIES: Re-run if week changes, user logs in, or toggle is flipped
+  }, [currentWeekStart, user, showGoogleCalendar]);
 
   const deleteEvent = async (id) => {
     if (window.confirm("Are you sure you want to delete this job?")) {
@@ -295,7 +335,11 @@ function Home({ user }) {
     });
 
     // 3. FINAL RETURN
-    return [...jobElements, ...googleElements];
+    if (showGoogleCalendar) {
+      return [...googleElements, ...jobElements];
+    } else {
+      return [...jobElements];
+    }
   };
 
   const hours = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => i + START_HOUR);
@@ -370,6 +414,24 @@ function Home({ user }) {
           <Button variant="outline-primary" onClick={handlePrevWeek}>&larr; Previous Week</Button>
 
           <Button variant="outline-secondary" onClick={handleToday}>Today</Button>
+
+          <div style={{ 
+            padding: "6px 12px", 
+            borderRadius: "6px", 
+            border: "1px solid #2563eb",
+            fontSize: "14px",
+            display: "flex",
+            alignItems: "center"
+          }}>
+            <Form.Check 
+              type="switch"
+              id="google-calendar-toggle"
+              label=" Show Google Calendar Events"
+              checked={showGoogleCalendar}
+              onChange={() => setShowGoogleCalendar(!showGoogleCalendar)}
+              style={{ cursor: "pointer", marginBottom: 0, color: "#2563eb" }}
+            />
+          </div>
         </div>
         <div className="text-center">
           <h2 className="mb-0">Schedule</h2>
