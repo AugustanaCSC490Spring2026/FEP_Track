@@ -6,7 +6,7 @@ import { auth, provider, database } from "../firebase-config";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
-import { signInWithPopup, signOut } from "firebase/auth";
+import { signInWithPopup, signOut, GoogleAuthProvider } from "firebase/auth";
 import useAuth from "../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 
@@ -36,6 +36,13 @@ function Login() {
   const handleSignIn = async () => {
     try {
       const result = await signInWithPopup(auth, provider);
+
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const token = credential.accessToken;
+      if (token) {
+        console.log("Token captured and saved!");
+        sessionStorage.setItem("google_access_token", token);
+      }
       
       if (!result.user.email.endsWith("@augustana.edu")) {
         await signOut(auth);

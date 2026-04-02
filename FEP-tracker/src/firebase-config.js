@@ -27,5 +27,6 @@ const provider = new GoogleAuthProvider();
 provider.setCustomParameters({
   hd: "augustana.edu"
 });
+provider.addScope('https://www.googleapis.com/auth/calendar.events');
 
 export { database, auth, provider };

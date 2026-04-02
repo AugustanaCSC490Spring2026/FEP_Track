@@ -12,6 +12,7 @@ import EventCard from "../components/event-card";
 
 function Home({ user }) {
   const [events, setEvents] = useState([]);
+  const [googleEvents, setGoogleEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState(null);
 
@@ -56,13 +57,49 @@ function Home({ user }) {
     loadEvents();
   }, []);
 
-const deleteEvent = async (id) => {
-  if (window.confirm("Are you sure you want to delete this job?")) {
-    await deleteDoc(doc(database, "upcoming_events", id));
-    setEvents((prev) => prev.filter((e) => e.id !== id));
-    setSelectedEvent(null); 
-  }
-};
+  useEffect(() => {
+    const fetchGoogleCalendar = async () => {
+      const token = sessionStorage.getItem("google_access_token");
+      if (!token || !user) return;
+
+      const timeMin = currentWeekStart.toISOString();
+      const timeMax = addDays(currentWeekStart, 7).toISOString();
+
+      try {
+        const response = await fetch(
+          `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const data = await response.json();
+        
+        const formatted = (data.items || []).map(item => {
+          const start = new Date(item.start.dateTime || item.start.date);
+          const end = new Date(item.end.dateTime || item.end.date);
+          
+          return {
+            id: item.id,
+            title: item.summary,
+            time: `${format(start, "HH:mm")} – ${format(end, "HH:mm")}`,
+            date: format(start, "yyyy-MM-dd"),
+            isGoogleEvent: true
+          };
+        });
+        setGoogleEvents(formatted);
+      } catch (err) {
+        console.error("Google Calendar fetch failed", err);
+      }
+    };
+
+    fetchGoogleCalendar();
+  }, [currentWeekStart, user]);
+
+  const deleteEvent = async (id) => {
+    if (window.confirm("Are you sure you want to delete this job?")) {
+      await deleteDoc(doc(database, "upcoming_events", id));
+      setEvents((prev) => prev.filter((e) => e.id !== id));
+      setSelectedEvent(null); 
+    }
+  };
 
   const handleEditEvent = (event) => {
     setEditingEvent(event);
@@ -142,16 +179,19 @@ const deleteEvent = async (id) => {
 
   // render events with overlap logic
   const renderEventsForDay = (day) => {
-    const dayEvents = events.filter((e) => {
+    const formattedDay = format(day, "yyyy-MM-dd");
+
+    // 1. Filter and Map Jobs
+    const dayJobs = events.filter((e) => {
       if (!e.date) return false;
       const [year, month, dateNum] = e.date.split("-").map(Number);
       const eventDate = new Date(year, month - 1, dateNum);
-      return format(eventDate, "yyyy-MM-dd") === format(day, "yyyy-MM-dd");
+      return format(eventDate, "yyyy-MM-dd") === formattedDay;
     }).sort((a, b) => a.time.localeCompare(b.time));
 
-    return dayEvents.map((event, index) => {
+    const jobElements = dayJobs.map((event, index) => {
       const pos = getEventPosition(event);
-      const overlaps = dayEvents.filter((other) => {
+      const overlaps = dayJobs.filter((other) => {
         if (event.id === other.id) return false;
         const [sA, eA] = event.time.split(" – ").map(t => parseInt(t.replace(':', '')));
         const [sB, eB] = other.time.split(" – ").map(t => parseInt(t.replace(':', '')));
@@ -180,7 +220,7 @@ const deleteEvent = async (id) => {
             padding: "4px",
             fontSize: "11px",
             overflow: "hidden",
-            zIndex: 10,
+            zIndex: 1,
             border: "1px solid white",
             boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
             cursor: "pointer",
@@ -191,6 +231,55 @@ const deleteEvent = async (id) => {
         </div>
       );
     });
+
+    // 2. Filter and Map Google Events
+    const dayGoogleEvents = googleEvents.filter((e) => {
+      const eventDate = typeof e.date === 'string' ? e.date : format(e.date, "yyyy-MM-dd");
+      return eventDate === formattedDay;
+    });
+
+    const googleElements = dayGoogleEvents.map((event, index) => {
+      const pos = getEventPosition(event);
+
+      const overlaps = dayGoogleEvents.filter((other) => {
+        if (event.id === other.id) return false;
+        const [sA, eA] = event.time.split(" – ").map(t => parseInt(t.replace(':', '')));
+        const [sB, eB] = other.time.split(" – ").map(t => parseInt(t.replace(':', '')));
+        return sA < eB && eA > sB;
+      });
+
+      const isOverlapping = overlaps.length > 0;
+      const width = isOverlapping ? 90 / (overlaps.length + 1) : 90;
+      const leftOffset = isOverlapping ? (index % (overlaps.length + 1)) * width : 0;
+
+      if (pos.top < 0 && (pos.top + pos.height) <= 0) return null;
+
+      return (
+        <div
+          key={event.id}
+          style={{
+            position: "absolute",
+            left: `${leftOffset}%`,
+            width: `${width}%`,
+            top: pos.top,
+            height: pos.height,
+            background: "rgba(255, 0, 0, 0.3)",
+            color: "#FF0000",
+            borderRadius: "4px",
+            padding: "4px",
+            fontSize: "10px",
+            zIndex: 10,
+
+            pointerEvents: "none",
+          }}
+        >
+          <strong>📅 {event.title}</strong>
+        </div>
+      );
+    });
+
+    // 3. FINAL RETURN
+    return [...jobElements, ...googleElements];
   };
 
   const hours = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => i + START_HOUR);
