@@ -112,9 +112,11 @@ function Students() {
                 </Badge>
               </td>
               <td>
+                {student.role !== "staff" && (
                 <Badge bg={student.role === "student" ? "success" : "secondary"}>
-                  {student.role === "student" ? "Approved" : ""}
+                  {student.role === "student" ? "Approved" : "Pending"}
                 </Badge>
+                )}
               </td>
               <td>
                 {student.role !== "staff" && (
