@@ -10,7 +10,7 @@ import {
   arrayRemove,
 } from "firebase/firestore"
 import EventCard from "../components/event-card";
-
+import TimeClockModal from "../components/timeClock";
 function Dashboard({ user }) {
 
   const [myCurrentJobs, setMyCurrentJobs] = useState([])
@@ -108,7 +108,9 @@ function Dashboard({ user }) {
           />
         ))
       )}
-
+      <div style={{ marginTop: "40px", textAlign: "center" }}>
+        <TimeClockModal user={user} jobs={myCurrentJobs} />
+      </div>
     </div>
   )
 }
