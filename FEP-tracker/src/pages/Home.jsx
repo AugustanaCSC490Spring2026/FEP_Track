@@ -37,6 +37,22 @@ function Home({ user }) {
   const END_HOUR = 24;
   const HOUR_HEIGHT = 60;
 
+  const GOOGLE_COLORS = {
+    "1": "#a4bdfc", // Lavender
+    "2": "#7ae7bf", // Sage
+    "3": "#dbadff", // Grape
+    "4": "#ff887c", // Flamingo
+    "5": "#fbd75b", // Banana
+    "6": "#ffb878", // Tangerine
+    "7": "#46d6db", // Peacock
+    "8": "#e1e1e1", // Graphite
+    "9": "#5484ed", // Blueberry
+    "10": "#51b886", // Basil
+    "11": "#dc2127", // Tomato
+  };
+
+  const DEFAULT_GOOGLE_COLOR = "#46d6db"; // Fallback gray
+
   const resetForm = () => {
     setTitle(""); setStartTime(""); setEndTime(""); setSupervisor("");
     setLocation(""); setExtraInfo(""); setStudentCap(999); setDate("");
@@ -81,7 +97,8 @@ function Home({ user }) {
             title: item.summary,
             time: `${format(start, "HH:mm")} – ${format(end, "HH:mm")}`,
             date: format(start, "yyyy-MM-dd"),
-            isGoogleEvent: true
+            isGoogleEvent: true,
+            color: GOOGLE_COLORS[item.colorId] || DEFAULT_GOOGLE_COLOR
           };
         });
         setGoogleEvents(formatted);
@@ -263,13 +280,12 @@ function Home({ user }) {
             width: `${width}%`,
             top: pos.top,
             height: pos.height,
-            background: "rgba(255, 0, 0, 0.3)",
-            color: "#FF0000",
+            background: `${event.color}80`,
+            color: "#000000",
             borderRadius: "4px",
             padding: "4px",
             fontSize: "10px",
             zIndex: 10,
-
             pointerEvents: "none",
           }}
         >
