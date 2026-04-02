@@ -156,6 +156,7 @@ function Dashboard({ user }) {
     setShowForm(false);
   };
 
+  
   const deleteEvent = async (id) => {
     await deleteDoc(doc(database, "upcoming_events", id));
     setEvents((prev) => prev.filter((e) => e.id !== id));
