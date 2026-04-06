@@ -19,7 +19,7 @@ const periodCreated = onSchedule({
     date: today.toISOString().split("T")[0],
     startdate: startdate,
     enddate: enddate,
-    students: {},
+    attendance: {},
   });
 
   await db.collection("periods").add(period.toFirestore());
@@ -40,17 +40,17 @@ const periodUpdated = onDocumentCreated(
       .get();
 
     if (snapshot.empty) {
-      console.log(`No period found for date: ${eventData.date}`);
+      // console.log(`No period found for date: ${eventData.date}`);
       return;
     }
 
     const doc = snapshot.docs[0];
     const period = new Period({ id: doc.id, ...doc.data() });
 
-    period.setStudents(eventId, eventData.students);
+    period.setStudents(eventId, eventData?.attendance);
 
     await db.collection("periods").doc(period.id).update(period.toFirestore());
-    console.log(`Period updated for event on ${eventData.date}`);
+    // console.log(`Period updated for event on ${eventData.date}`);
   }
 );
 

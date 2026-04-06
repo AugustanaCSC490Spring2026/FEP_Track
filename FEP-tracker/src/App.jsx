@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import './App.css'
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { Routes, Route, Navigate } from "react-router-dom";
@@ -25,14 +26,15 @@ const ProtectedRoute = ({ user, allowedRoles, children }) => {
 const routes = [
   { path: "/home",     component: Home,     roles: ["any"] },
   { path: "/profile",  component: Profile,  roles: ["any"] },
-  { path: "/students", component: Students, roles: ["any"] },
-];
+]; //role check is starting to feel  redundant
 
 function App() {
   const { user, loading } = useAuth();
-
+  if (user?.role === "staff") {
+    routes.push({ path: "/students", component: Students, roles: ["staff"] });
+  }//protects the students page from being added to the nav if the user is not staff but also protects the route itself from being accessed by non staff users
   if (loading) return <h2>Loading...</h2>;
-
+  routes
   return (
     <>
       <Navbar user={user} />

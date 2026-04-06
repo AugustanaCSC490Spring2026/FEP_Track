@@ -3,13 +3,17 @@ const { getFirestore } = require("firebase-admin/firestore");
 
 
 
-const moveTimedOutEventsToPending = onSchedule("every 24 hours", async () => {
+const moveTimedOutEventsToPending = onSchedule("0 2 * * *", 
+  // 2:00 AM every day
+  async () => {
   const db = getFirestore();
-  const today = new Date().toISOString().split("T")[0];
-
+  const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const cutoff = yesterday.toISOString().split("T")[0];
+    //to avoid race conditions of clocked in events being moved to pending, we only move events that are strictly before the current date (not including today)
   const snapshot = await db
     .collection("upcoming_events")
-    .where("date", "<", today)
+    .where("date", "<", cutoff)
     .get();
 
   if (snapshot.empty) {

@@ -5,19 +5,24 @@ class Period {
     this.startdate = firebaseObject.startdate || null;
     this.enddate   = firebaseObject.enddate   || null;
 
-    // students is a map: { studentId: { job_id, total_time } }
-    this.students  = firebaseObject.students  || {};
+    // attendance is a map: { studentId: { job_id, total_time } }
+    this.attendance  = firebaseObject?.attendance  || {};
   }
 
   // Get one student's data
   getStudent(studentId) {
-    return this.students[studentId] || null;
+    return this.attendance[studentId] || null;
   }
 
-  setStudents(eventID, studentsMap) {
+  setAttendance(eventID, studentsMap) {
     Object.entries(studentsMap).forEach(([studentId, studentData]) => {
       const totalTime = this.findTotalTime(studentData.startTime, studentData.endTime);
-      this.students[studentId] = { job_id: eventID, total_time: totalTime };
+      if (!this.attendance[studentId]) {
+      this.attendance[studentId] = [];
+    }
+      this.attendance[studentId].push({ job_id: eventID, total_time: totalTime });
+      // since we store ids as key we might overwrite existing data and since we want to store the total per event i am goin with this 
+      //{ studentId: [{eventID:totalTime}]
     });
   }
 
@@ -33,7 +38,7 @@ class Period {
       date:      this.date,
       startdate: this.startdate,
       enddate:   this.enddate,
-      students:  this.students,
+      attendance:  this.attendance,
     };
   }
 }

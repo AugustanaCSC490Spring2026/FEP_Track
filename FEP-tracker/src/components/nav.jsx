@@ -2,19 +2,13 @@ import { useState } from "react";
 import {
   House,
   BoxArrowInRight,
-  Speedometer2,
   Person,
-  Gear,
+  Mortarboard
 } from "react-bootstrap-icons";
 /* There is no need for a login seperate page it should be built on to the a profile page */
 
 const navLinks = [
   { href: "/", label: "Home", icon: <House className="me-3" /> },
-  {
-      href : "/students",
-      label : "students",
-      icon : <Gear className="me-3"/>
-  },
   {
     href: "/profile",
     label: "Account",
@@ -29,6 +23,13 @@ const navLinks = [
 
 export default function Navbar({ user }) {
   const [isOpen, setIsOpen] = useState(false);
+   if (user?.role === "staff") {
+    navLinks.push(  {
+      href : "/students",
+      label : "students",
+      icon : <Mortarboard className="me-3"/>
+  },);
+  }
   return (
     <nav
       className="navbar navbar-expand-md navbar-dark bg-primary"
@@ -64,6 +65,7 @@ export default function Navbar({ user }) {
               <>
               </>
             ) : (
+              
               navLinks.map((link) => (
                 <li className="nav-item" key={link.href}>
                   <a
