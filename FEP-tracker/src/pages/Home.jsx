@@ -77,7 +77,6 @@ function Home({ user }) {
   }, []);
 
   useEffect(() => {
-    // 1. EXIT EARLY: If toggle is off or no user, clear events and stop
     if (!showGoogleCalendar || !user) {
       setGoogleEvents([]);
       return;
@@ -86,13 +85,11 @@ function Home({ user }) {
     const fetchGoogleCalendar = async () => {
       let token = sessionStorage.getItem("google_access_token");
 
-      // 2. TOKEN CHECK/REFRESH: If no token, get a fresh one
       if (!token) {
         try {
           const provider = new GoogleAuthProvider();
           provider.addScope('https://www.googleapis.com/auth/calendar.events.readonly');
           
-          // This ensures the user is still "linked" to Google
           const result = await reauthenticateWithPopup(auth.currentUser, provider);
           const credential = GoogleAuthProvider.credentialFromResult(result);
           token = credential.accessToken;
@@ -102,12 +99,11 @@ function Home({ user }) {
           }
         } catch (error) {
           console.error("Token refresh failed:", error);
-          setShowGoogleCalendar(false); // Turn toggle off if they cancel the popup
+          setShowGoogleCalendar(false);
           return;
         }
       }
 
-      // 3. THE ACTUAL FETCH: (Your existing logic)
       const timeMin = currentWeekStart.toISOString();
       const timeMax = addDays(currentWeekStart, 7).toISOString();
 
@@ -119,9 +115,8 @@ function Home({ user }) {
         
         const data = await response.json();
         
-        // If the token was "old" but still in sessionStorage, the API might return a 401
         if (data.error?.code === 401) {
-          sessionStorage.removeItem("google_access_token"); // Clear it so next toggle refreshes
+          sessionStorage.removeItem("google_access_token");
           return;
         }
 
@@ -147,7 +142,6 @@ function Home({ user }) {
 
     fetchGoogleCalendar();
     
-    // 4. DEPENDENCIES: Re-run if week changes, user logs in, or toggle is flipped
   }, [currentWeekStart, user, showGoogleCalendar]);
 
   const deleteEvent = async (id) => {
@@ -234,11 +228,9 @@ function Home({ user }) {
     return { top: topPosition, height: height };
   };
 
-  // render events with overlap logic
   const renderEventsForDay = (day) => {
     const formattedDay = format(day, "yyyy-MM-dd");
 
-    // 1. Filter and Map Jobs
     const dayJobs = events.filter((e) => {
       if (!e.date) return false;
       const [year, month, dateNum] = e.date.split("-").map(Number);
@@ -289,7 +281,6 @@ function Home({ user }) {
       );
     });
 
-    // 2. Filter and Map Google Events
     const dayGoogleEvents = googleEvents.filter((e) => {
       const eventDate = typeof e.date === 'string' ? e.date : format(e.date, "yyyy-MM-dd");
       return eventDate === formattedDay;
@@ -334,7 +325,6 @@ function Home({ user }) {
       );
     });
 
-    // 3. FINAL RETURN
     if (showGoogleCalendar) {
       return [...googleElements, ...jobElements];
     } else {
@@ -399,14 +389,29 @@ function Home({ user }) {
       </Modal>
 
       {selectedEvent && (
-        <div onClick={() => setSelectedEvent(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-          <div onClick={e => e.stopPropagation()} style={{ width: "100%", maxWidth: 540 }}>
-            <EventCard event={selectedEvent} user={user} onCallBack={deleteEvent} onEdit={handleEditEvent} onApply={()=> handleApply(user.uid,selectedEvent.id)}/>
-            <div style={{ textAlign: "center", marginTop: 8 }}>
-              <button onClick={() => setSelectedEvent(null)} style={{ background: "white", border: "none", borderRadius: 8, padding: "6px 20px", cursor: "pointer", fontSize: 13, color: "#555" }}>Close</button>
+          <div
+              onClick={() => setSelectedEvent(null)}
+              style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}
+          >
+            <div onClick={e => e.stopPropagation()} style={{ width: "100%", maxWidth: 540 }}>
+              <EventCard
+                  event={selectedEvent}
+                  user={user}
+                  status="Upcoming"
+                  onCallBack={deleteEvent}
+                  onEdit={handleEditEvent}
+                  onApply={() => handleApply(user.uid, selectedEvent.id)}
+              />
+              <div style={{ textAlign: "center", marginTop: 8 }}>
+                <button
+                    onClick={() => setSelectedEvent(null)}
+                    style={{ background: "white", border: "none", borderRadius: 8, padding: "6px 20px", cursor: "pointer", fontSize: 13, color: "#555" }}
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
-        </div>
       )}
 
       <div className="d-flex justify-content-between align-items-center mb-4">

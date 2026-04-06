@@ -191,6 +191,29 @@ function Dashboard({ user }) {
     return matchesTitle && matchesBuilding && matchesSupervisor && matchesAvailability;
   });
 
+  const handleConfirmJob = async (event) => {
+    try {
+      const completedData = {
+        ...event,
+        status: "Verified",
+        completedAt: new Date()
+      };
+      // Remove the ID so Firestore generates a new one in the new collection
+      delete completedData.id;
+
+      // 1. Add to completed_events
+      await addDoc(collection(database, "completed_events"), completedData);
+      // 2. Remove from pending_events
+      await deleteDoc(doc(database, "pending_events", event.id));
+
+      // 3. Update UI
+      setEvents((prev) => prev.filter((e) => e.id !== event.id));
+      alert("Job confirmed and moved to Completed!");
+    } catch (error) {
+      console.error("Error confirming job:", error);
+    }
+  };
+
   return (
     <div
       style={{
@@ -346,18 +369,19 @@ function Dashboard({ user }) {
                 </div>
               ) : (
                 filteredEvents.map((event) => (
-                  <EventCard 
-                    key={event.id} 
-                    event={event} 
-                    // The delete function will now correctly map to the current collection
-                    onCallBack={async (id) => {
-                        const collectionName = collectionMap[currentTab];
-                        await deleteDoc(doc(database, collectionName, id));
-                        setEvents((prev) => prev.filter((e) => e.id !== id));
-                    }}
-                    onEdit={handleEditEvent} 
-                    user={user} 
-                  />
+                    <EventCard
+                        key={event.id}
+                        event={event}
+                        status={currentTab} // Pass "Upcoming", "Pending Approval", or "Completed"
+                        onConfirm={handleConfirmJob}
+                        onEdit={handleEditEvent}
+                        onCallBack={async (id) => {
+                          const collectionName = collectionMap[currentTab];
+                          await deleteDoc(doc(database, collectionName, id));
+                          setEvents((prev) => prev.filter((e) => e.id !== id));
+                        }}
+                        user={user}
+                    />
                 ))
               )}
             </div>

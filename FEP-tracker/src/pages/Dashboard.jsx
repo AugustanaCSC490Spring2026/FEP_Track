@@ -103,6 +103,7 @@ function Dashboard({ user }) {
             key={job.id}
             event={job}
             user={user}
+            status="MyJobs"
             onCallBack={handleDrop}
             onEdit={() => {}}
           />

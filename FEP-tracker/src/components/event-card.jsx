@@ -12,6 +12,8 @@ export default function EventCard({
   onEdit,
   user,
   onApply,
+  status,
+  onConfirm,
 }) {
   const filled = event?.students?.length ?? 0;
   const location = useLocation();
@@ -116,25 +118,24 @@ export default function EventCard({
           )}
 
           {user?.role === "staff" && (
-            <div className="d-flex gap-2">
-              <Button
-                variant="outline-primary"
-                size="sm"
-                onClick={() => onEdit(event)}
-              >
-                Edit
-              </Button>
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={() => {
-                  console.log("Delete clicked", event.id);
-                  onCallBack(event.id);
-                }}
-              >
-                Delete
-              </Button>
-            </div>
+              <div className="d-flex gap-2">
+                  {status === "Upcoming" && (
+                      <>
+                          <Button variant="outline-primary" size="sm" onClick={() => onEdit(event)}>Edit</Button>
+                          <Button variant="danger" size="sm" onClick={() => onCallBack(event.id)}>Delete</Button>
+                      </>
+                  )}
+
+                  {status === "Pending Approval" && (
+                      <Button variant="success" size="sm" className="w-100" onClick={() => onConfirm(event)}>
+                          Confirm Hours
+                      </Button>
+                  )}
+
+                  {status === "Completed" && (
+                      <Badge bg="secondary" className="w-100">Archived & Verified</Badge>
+                  )}
+              </div>
           )}
 
           {user?.role === "student" && (
@@ -156,7 +157,7 @@ export default function EventCard({
                 </Button>
               )}
 
-              {path === "/profile" && (
+              {(path === "/profile" || status === "MyJobs") && (
                 <Button
                   variant="danger"
                   size="sm"
