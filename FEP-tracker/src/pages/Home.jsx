@@ -236,7 +236,8 @@ function Home({ user }) {
       const [year, month, dateNum] = e.date.split("-").map(Number);
       const eventDate = new Date(year, month - 1, dateNum);
       return format(eventDate, "yyyy-MM-dd") === formattedDay;
-    }).sort((a, b) => a.time.localeCompare(b.time));
+    }).sort((a, b) => a.time.localeCompare(b.time));  
+
 
     const jobElements = dayJobs.map((event, index) => {
       const pos = getEventPosition(event);
@@ -263,13 +264,13 @@ function Home({ user }) {
             width: `${width}%`,
             top: pos.top,
             height: pos.height,
-            background: isOverlapping ? "#3182ce" : "#0d6efd",
+            background: "#0d6efd",
             color: "white",
             borderRadius: "4px",
             padding: "4px",
             fontSize: "11px",
             overflow: "hidden",
-            zIndex: 1,
+            zIndex: 10,
             border: "1px solid white",
             boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
             cursor: "pointer",
@@ -330,7 +331,7 @@ function Home({ user }) {
             borderRadius: "4px",
             padding: "4px",
             fontSize: "10px",
-            zIndex: 10,
+            zIndex: 1,
             pointerEvents: "none",
           }}
         >
@@ -428,7 +429,7 @@ function Home({ user }) {
           </div>
       )}
 
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="d-flex justify-content-between align-items-center position-relative py-3">
         <div className="d-flex gap-2">
           <Button variant="outline-primary" onClick={handlePrevWeek}>&larr; Previous Week</Button>
 
@@ -445,16 +446,25 @@ function Home({ user }) {
             <Form.Check 
               type="switch"
               id="google-calendar-toggle"
-              label=" Show Google Calendar Events"
+              label=" Show Google Calendar"
               checked={showGoogleCalendar}
               onChange={() => setShowGoogleCalendar(!showGoogleCalendar)}
               style={{ cursor: "pointer", marginBottom: 0, color: "#2563eb" }}
             />
           </div>
         </div>
-        <div className="text-center">
-          <h2 className="mb-0">Schedule</h2>
-          <span>Week of {format(currentWeekStart, "MMMM do, yyyy")}</span>
+        <div>
+          <div style={{
+            position: "absolute",
+            left: "50%",
+            transform: "translateX(-50%)",
+            textAlign: "center",
+            top: "0px"
+            
+            }}>
+            <h2 className="mb-0">Schedule</h2>
+            <span>Week of {format(currentWeekStart, "MMMM do, yyyy")}</span>
+          </div>
         </div>
         <div className="d-flex gap-2">
           {user?.role === "staff" && (
@@ -467,10 +477,10 @@ function Home({ user }) {
           <Button variant="outline-primary" onClick={handleNextWeek}>Next Week &rarr;</Button>
         </div>
       </div>
-
+            
       <Card style={{ flex: 1, overflow: "hidden" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "80px repeat(7, 1fr)", height: "100%" }}>
-          <div style={{ marginTop: "40px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "50px repeat(7, 1fr)", height: "100%" }}>
+          <div style={{ marginTop: "10px" }}>
             {hours.map((h) => (
               <div key={h} style={{ height: HOUR_HEIGHT, borderBottom: "1px solid #eee", fontSize: "12px", textAlign: "right", paddingRight: 10, lineHeight: `${HOUR_HEIGHT}px` }}>
                 {h > 12 ? `${h - 12} PM` : h === 12 ? "12 PM" : `${h} AM`}
