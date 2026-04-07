@@ -23,7 +23,7 @@ const navLinks = [
 
 export default function Navbar({ user }) {
   const [isOpen, setIsOpen] = useState(false);
-   if (user?.role === "staff") {
+   if (user?.role === "admin") {
     navLinks.push(  {
       href : "/students",
       label : "students",

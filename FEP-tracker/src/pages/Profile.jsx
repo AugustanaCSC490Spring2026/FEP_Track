@@ -18,7 +18,7 @@ export default function Profile() {
 
   return user.role === "student"
   ? <Student user={user} />
-  : user.role === "staff"
+  : user.role === "staff" || user.role ==="admin"
   ? <Admin user={user} />
   : <Navigate to="/unauthorized" />;
 }
