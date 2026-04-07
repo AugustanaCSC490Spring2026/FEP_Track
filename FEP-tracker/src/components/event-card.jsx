@@ -119,7 +119,7 @@ export default function EventCard({
             </Card.Text>
           )}
 
-          {user?.role === "staff" && (
+          {(user?.role === "staff" || user?.role === "admin") && (
               <div className="d-flex gap-2">
                   {status === "Upcoming" && (
                       <>

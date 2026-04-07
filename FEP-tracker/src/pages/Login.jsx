@@ -3,7 +3,7 @@
 import "../App.css";
 import { useState, useEffect } from "react";
 import { auth, provider, database } from "../firebase-config";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, setDoc, getDocs, collection } from "firebase/firestore";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import { signInWithPopup, signOut, GoogleAuthProvider } from "firebase/auth";
@@ -17,12 +17,11 @@ function Logout() {
     const handleSignOut = async () => {
       try {
         await signOut(auth);
-        navigate("/");  
+        navigate("/");
       } catch (error) {
         console.error("Sign-Out Error:", error);
       }
     };
-
     handleSignOut();
   }, []);
 
@@ -30,24 +29,36 @@ function Logout() {
 }
 
 function Login() {
-  const { user, isRegistered, loading ,setIsRegistered} = useAuth();
+  const { user, isRegistered, loading, setIsRegistered } = useAuth();
   const [phoneNumber, setPhoneNumber] = useState("");
+  const navigate = useNavigate();
 
   const handleSignIn = async () => {
     try {
       const result = await signInWithPopup(auth, provider);
-
       const credential = GoogleAuthProvider.credentialFromResult(result);
       const token = credential.accessToken;
+
       if (token) {
         console.log("Token captured and saved!");
         sessionStorage.setItem("google_access_token", token);
       }
-      
+
       if (!result.user.email.endsWith("@augustana.edu")) {
         await signOut(auth);
         alert("Please use your Augustana school email to sign in.");
-        return; 
+        return;
+      }
+
+      // Check if their email has been added by admin before letting them in
+      const emailKey = result.user.email.toLowerCase();
+      const snap = await getDocs(collection(database, "users"));
+      const existingUser = snap.docs.find(d => d.data().email === emailKey);
+
+      if (!existingUser) {
+        await signOut(auth);
+        alert("You have not been added to the system. Please contact your administrator.");
+        return;
       }
 
       console.log(result, "Result");
@@ -55,27 +66,38 @@ function Login() {
       console.error("Sign-In Error:", error);
     }
   };
-  const navigate = useNavigate();
+
   const handleRegister = async () => {
     if (!user) return;
 
-    const username = user.email.split("@")[0];
-    const hasNumber = /\d/.test(username);
-    const role = hasNumber ? "student" : "staff";
-
+    const emailKey = user.email.toLowerCase();
     const userRef = doc(database, "users", user.uid);
 
-    await setDoc(userRef, {
-      name: user.displayName,
-      email: user.email,
-      role: role,
-      phone: phoneNumber,
-      createdAt: new Date(),
-    });
+    try {
+      const snap = await getDocs(collection(database, "users"));
+      const existingUser = snap.docs.find(d => d.data().email === emailKey);
 
-    console.log("User registered with role:", role);
-    setIsRegistered(true);
-    return navigate("/home"); //Keep as home since the profile will hang if the user is not registered, so we want to redirect them to home after registration.
+      if (!existingUser) {
+        await signOut(auth);
+        alert("You have not been added to the system. Please contact your administrator.");
+        return;
+      }
+
+      await setDoc(userRef, {
+        name: user.displayName,
+        email: emailKey,
+        role: existingUser.data().role,
+        phone: phoneNumber,
+        createdAt: new Date(),
+      });
+
+      console.log("User registered with role:", existingUser.data().role);
+      setIsRegistered(true);
+      return navigate("/home"); // Keep as home since the profile will hang if the user is not registered
+    } catch (err) {
+      console.error("Registration error:", err);
+      alert("Something went wrong. Please try again.");
+    }
   };
 
   const formatPhoneNumber = (value) => {
@@ -106,7 +128,6 @@ function Login() {
           </Card>
         </div>
       )}
-
       {user && !isRegistered && (
         <div className="card">
           <h2>Please Register Account</h2>
