@@ -276,10 +276,24 @@ function Home({ user }) {
           }}
         >
           <strong>{event.title}</strong>
-          <div style={{ fontSize: "10px" }}>{event.time}</div>
+          <div style={{ fontSize: "10px" }}>{timeFormat(event.startTime)} - {timeFormat(event.endTime)} </div>
         </div>
       );
     });
+
+    function timeFormat(time) {
+      let hours = 0;
+      let ampm = "";
+      let minutes = 0;
+
+      if (time) {
+        const date = new Date(`1970-01-01T${time}:00`);
+        hours = date.getHours();
+        minutes = date.getMinutes();
+        ampm = hours >= 12 ? "PM" : "AM";
+      }
+      return `${((hours + 11) % 12) + 1}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+    }
 
     const dayGoogleEvents = googleEvents.filter((e) => {
       const eventDate = typeof e.date === 'string' ? e.date : format(e.date, "yyyy-MM-dd");
@@ -320,7 +334,7 @@ function Home({ user }) {
             pointerEvents: "none",
           }}
         >
-          <strong>📅 {event.title}</strong>
+          <strong>{event.title}</strong>
         </div>
       );
     });
