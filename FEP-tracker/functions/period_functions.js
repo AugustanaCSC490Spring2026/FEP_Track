@@ -12,8 +12,8 @@ const periodCreated = onSchedule({
   const twoWeeksLater = new Date(today);
   twoWeeksLater.setDate(today.getDate() + 14);
 
-  const startdate = today.toISOString().split("T")[0] + "T08:00:00Z";
-  const enddate = twoWeeksLater.toISOString().split("T")[0] + "T16:00:00Z";
+  const startdate = today.toISOString().split("T")[0];
+  const enddate = twoWeeksLater.toISOString().split("T")[0];
 
   const period = new Period({
     date: today.toISOString().split("T")[0],
@@ -32,25 +32,34 @@ const periodUpdated = onDocumentCreated(
     const db = getFirestore();
     const eventData = event.data.data();
     const eventId = event.params.completed_eventId;
-
+    console.log(`Processing completed event: ${eventId} on ${eventData.date}`);
     const snapshot = await db
       .collection("periods")
       .where("startdate", "<=", eventData.date)
-      .where("enddate", ">=", eventData.date)
       .get();
+    
 
     if (snapshot.empty) {
-      // console.log(`No period found for date: ${eventData.date}`);
+      console.log(`No period found for date: ${eventData.date}`);
+      return;
+    }
+    const filtered = snapshot.docs.filter((doc) => {
+      const { startdate, enddate } = doc.data();
+      return startdate <= eventData.date && enddate >= eventData.date;
+    });
+
+    if (filtered.length === 0) {
+      console.log(`No period found that includes date: ${eventData.date}`);
       return;
     }
 
-    const doc = snapshot.docs[0];
+    const doc = filtered[0];
     const period = new Period({ id: doc.id, ...doc.data() });
 
-    period.setStudents(eventId, eventData?.attendance);
+    period.setAttendance(eventId, eventData?.attendance);
 
     await db.collection("periods").doc(period.id).update(period.toFirestore());
-    // console.log(`Period updated for event on ${eventData.date}`);
+    console.log(`Period updated for event on ${eventData}`);
   }
 );
 

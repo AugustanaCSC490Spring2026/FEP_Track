@@ -35,21 +35,28 @@ function TimeClockModal({ user, jobs = [] }) {
     }
   }, [log, user?.uid]);
 
-  // Sort jobs by earliest date
-  const sortedJobs = [...jobs].sort((a, b) => {
-    const dateA = a.date?.toDate ? a.date.toDate() : new Date(a.date);
-    const dateB = b.date?.toDate ? b.date.toDate() : new Date(b.date);
-    return dateA - dateB;
-  });
-  const upcomingJobs = sortedJobs.filter((job) => {
-    const jobDate = job.date?.toDate ? job.date.toDate() : new Date(job.date);
-    const userAttendance = job.attendance?.[user?.uid];
+const parseDate = (date) => {
+  if (date?.toDate) return date.toDate(); 
+  const [year, month, day] = date.split("-").map(Number);
+  return new Date(year, month - 1, day); // local midnight, since the times in the firestore is in a diffrent timezone and we only care about the date part we can just parse it as local time to avoid timezone issues
+};
 
-    const isFuture = jobDate >= new Date();
-    const notYetClockedIn = !userAttendance?.timeIn;
+const sortedJobs = [...jobs].sort((a, b) => {
+  return parseDate(a.date) - parseDate(b.date);
+});
 
-    return isFuture && notYetClockedIn;
-  });
+const upcomingJobs = sortedJobs.filter((job) => {
+  const jobDate = parseDate(job.date);
+  const userAttendance = job.attendance?.[user?.uid];
+
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+
+  const isFuture = jobDate >= startOfToday;
+  const notYetClockedIn = !userAttendance?.timeIn;
+
+  return isFuture && notYetClockedIn;
+});
   const fmt = (d) => (d instanceof Date ? d : new Date(d)).toLocaleTimeString();
   const fmtDate = (d) =>
     (d instanceof Date ? d : new Date(d)).toLocaleDateString(undefined, {

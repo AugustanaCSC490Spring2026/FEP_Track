@@ -3,33 +3,28 @@ import {
   House,
   BoxArrowInRight,
   Person,
-  Mortarboard
+  Mortarboard,
 } from "react-bootstrap-icons";
 /* There is no need for a login seperate page it should be built on to the a profile page */
 
-const navLinks = [
+const baseNavLinks = [
   { href: "/", label: "Home", icon: <House className="me-3" /> },
-  {
-    href: "/profile",
-    label: "Account",
-    icon: <Person className="me-3" />,
-  },
-  {
-    href: "/logout",
-    label: "Logout",
-    icon: <BoxArrowInRight className="me-3" />,
-  }
+  { href: "/profile", label: "Account", icon: <Person className="me-3" /> },
+  { href: "/logout", label: "Logout", icon: <BoxArrowInRight className="me-3" /> },
 ];
+
+const staffLink = {
+  href: "/students",
+  label: "Students",
+  icon: <Mortarboard className="me-3" />,
+};
 
 export default function Navbar({ user }) {
   const [isOpen, setIsOpen] = useState(false);
-   if (user?.role === "admin") {
-    navLinks.push(  {
-      href : "/students",
-      label : "students",
-      icon : <Mortarboard className="me-3"/>
-  },);
-  }
+  // if the user is staff add the staff link in the middle of the nav links otherwise just show the base links  
+  const navLinks = user?.role === "staff"
+    ? [...baseNavLinks.slice(0, 2), staffLink, ...baseNavLinks.slice(2)]
+    : baseNavLinks;
   return (
     <nav
       className="navbar navbar-expand-md navbar-dark bg-primary"
@@ -62,10 +57,8 @@ export default function Navbar({ user }) {
           <ul className="navbar-nav ms-auto gap-1">
             {/* Show  no links if there is no user */}
             {!user ? (
-              <>
-              </>
+              <></>
             ) : (
-              
               navLinks.map((link) => (
                 <li className="nav-item" key={link.href}>
                   <a
