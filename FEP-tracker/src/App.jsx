@@ -30,8 +30,8 @@ const routes = [
 
 function App() {
   const { user, loading } = useAuth();
-  if (user?.role === "admin") {
-    routes.push({ path: "/students", component: Students, roles: ["admin"] });
+  if (user?.role === "staff") {
+    routes.push({ path: "/students", component: Students, roles: ["staff"] });
   }//protects the students page from being added to the nav if the user is not staff but also protects the route itself from being accessed by non staff users
   if (loading) return <h2>Loading...</h2>;
   routes
