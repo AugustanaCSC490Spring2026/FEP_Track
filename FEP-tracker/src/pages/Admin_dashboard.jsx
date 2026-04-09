@@ -11,6 +11,7 @@ import {
   doc,
   updateDoc,
   orderBy,
+  getDoc,
 } from "firebase/firestore";
 /* ------- */
 import EventCard from "../components/event-card";
@@ -45,7 +46,11 @@ function Dashboard({ user }) {
   const [filterSupervisor, setFilterSupervisor] = useState("All");
   const [filterAvailability, setFilterAvailability] = useState("All");
 
-  const [currentTab, setCurrentTab] = useState("Upcoming"); 
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmingEvent, setConfirmingEvent] = useState(null);
+  const [confirmingStudents, setConfirmingStudents] = useState([]);
+
+  const [currentTab, setCurrentTab] = useState("Upcoming");
   
   const collectionMap = {
     "Upcoming": "upcoming_events",
@@ -193,27 +198,161 @@ function Dashboard({ user }) {
     return matchesTitle && matchesBuilding && matchesSupervisor && matchesAvailability;
   });
 
-  const handleConfirmJob = async (event) => {
+  // Opens the modal and maps existing students to a local state with calculated time
+  const handleOpenConfirmModal = async (event) => {
+    setConfirmingEvent(event);
+
+    const defaultTime = calculateTimeDifference(event.startTime, event.endTime);
+
+    const currentStudents = event.students || [];
+    const initializedStudents = currentStudents.map((studentId) => {
+
+      const studentAttendance = event.attendance ? event.attendance[studentId] : null;
+
+      if (studentAttendance) {
+        const studentTimeIn = formatFirebaseTime(studentAttendance.timeIn);
+        const studentTimeOut = formatFirebaseTime(studentAttendance.timeOut);
+        const timeDifference = calculateTimeDifference(studentTimeIn, studentTimeOut);
+
+        return {
+          id: studentId,
+          hours: timeDifference.hours ?? defaultTime.hours,
+          minutes: timeDifference.minutes ?? defaultTime.minutes,
+          status: "Present"
+        };
+      }
+
+      return {
+        id: studentId,
+        hours: defaultTime.hours,
+        minutes: defaultTime.minutes,
+        status: "No Record"
+      };
+    });
+
+    setConfirmingStudents(initializedStudents);
+    setShowConfirmModal(true);
+  };
+
+  const handleStudentTimeChange = (index, field, value) => {
+    const updated = [...confirmingStudents];
+
+    let numValue = parseInt(value, 10);
+    if (isNaN(numValue) || numValue < 0) numValue = 0;
+
+    if (field === "minutes" && numValue > 59) numValue = 59;
+
+    updated[index][field] = numValue;
+    setConfirmingStudents(updated);
+  };
+
+  const executeConfirmJob = async () => {
+    if (!confirmingEvent) return;
+
     try {
       const completedData = {
-        ...event,
+        ...confirmingEvent,
+        students: confirmingStudents,
         status: "Verified",
         completedAt: new Date()
       };
-      // Remove the ID so Firestore generates a new one in the new collection
+
       delete completedData.id;
 
-      // 1. Add to completed_events
       await addDoc(collection(database, "completed_events"), completedData);
-      // 2. Remove from pending_events
-      await deleteDoc(doc(database, "pending_events", event.id));
+      await deleteDoc(doc(database, "pending_events", confirmingEvent.id));
 
-      // 3. Update UI
-      setEvents((prev) => prev.filter((e) => e.id !== event.id));
+      setEvents((prev) => prev.filter((e) => e.id !== confirmingEvent.id));
+
+      setShowConfirmModal(false);
+      setConfirmingEvent(null);
       alert("Job confirmed and moved to Completed!");
     } catch (error) {
       console.error("Error confirming job:", error);
     }
+  };
+
+  const calculateTimeDifference = (start, end) => {
+    if (!start || !end || start === "--:--:--" || end === "--:--:--") {
+      return { hours: 0, minutes: 0 };
+    }
+
+    const [startHour, startMin, startSec] = start.split(":").map(Number);
+    const [endHour, endMin, endSec] = end.split(":").map(Number);
+
+    let startInMins = startHour * 60 + startMin + (startSec || 0) / 60;
+    let endInMins = endHour * 60 + endMin + (endSec || 0) / 60;
+
+    if (endInMins < startInMins) {
+      endInMins += 24 * 60;
+    }
+
+    const diffMins = endInMins - startInMins;
+
+    const roundedTotalMins = Math.round(diffMins);
+
+    const hours = Math.floor(roundedTotalMins / 60);
+    const minutes = roundedTotalMins % 60;
+
+    return { hours, minutes };
+  };
+
+  const formatFirebaseTime = (timestamp, use24Hour = true) => {
+    if (!timestamp || typeof timestamp.toDate !== 'function') {
+      return "--:--:--";
+    }
+
+    const date = timestamp.toDate();
+
+    return date.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: !use24Hour
+    });
+  };
+
+  function timeFormat(time) {
+    let hours = 0;
+    let ampm = "";
+    let minutes = 0;
+
+    if (time) {
+      const date = new Date(`1970-01-01T${time}:00`);
+      hours = date.getHours();
+      minutes = date.getMinutes();
+      ampm = hours >= 12 ? "PM" : "AM";
+    }
+    return `${((hours + 11) % 12) + 1}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+  }
+
+  const StudentName = ({ studentId, db }) => {
+    const [name, setName] = useState("Loading...");
+    console.log("StudentID:" + studentId);
+    useEffect(() => {
+      const fetchName = async () => {
+        if (!studentId) return;
+
+        try {
+          const docRef = doc(db, "users", studentId);
+          const docSnap = await getDoc(docRef);
+
+          if (docSnap.exists()) {
+            setName(docSnap.data().name || "Unknown Student");
+          } else {
+            setName("Not Found");
+          }
+        } catch (e) {
+          // This is the "catch" clause the error was looking for!
+          console.error("Error fetching student name:", e);
+          setName("Error");
+        }
+      };
+
+      fetchName();
+    }, [studentId, db]);
+
+    return <>{name}</>;
   };
 
   return (
@@ -375,7 +514,7 @@ function Dashboard({ user }) {
                         key={event.id}
                         event={event}
                         status={currentTab} // Pass "Upcoming", "Pending Approval", or "Completed"
-                        onConfirm={handleConfirmJob}
+                        onConfirm={handleOpenConfirmModal}
                         onEdit={handleEditEvent}
                         onCallBack={async (id) => {
                           const collectionName = collectionMap[currentTab];
@@ -514,6 +653,64 @@ function Dashboard({ user }) {
             </Form>
           </Card>
         </Modal.Body>
+      </Modal>
+
+      <Modal show={showConfirmModal} onHide={() => setShowConfirmModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Confirm Job & Adjust Hours</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {confirmingEvent && (
+            <>
+              <h5>{confirmingEvent.title}</h5>
+              <p className="text-muted mb-4">{confirmingEvent.date} | {timeFormat(confirmingEvent.startTime)} - {timeFormat(confirmingEvent.endTime)}</p>
+
+              <h6 className="mb-3">Student Time Worked</h6>
+              {confirmingStudents.length === 0 ? (
+                <p className="text-muted">No students registered for this job.</p>
+              ) : (
+                confirmingStudents.map((student, index) => (
+                  <Form.Group key={index} className="mb-3 d-flex align-items-center">
+                    <Form.Label className="mb-0 me-3" style={{ minWidth: "150px", fontWeight: "500" }}>
+                      <StudentName studentId={student.id} db={database} />
+                    </Form.Label>
+
+                    <div className="d-flex align-items-center gap-2">
+                      <Form.Control
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={student.hours}
+                        onChange={(e) => handleStudentTimeChange(index, "hours", e.target.value)}
+                        style={{ maxWidth: "80px" }}
+                      />
+                      <span className="text-muted small">hrs</span>
+
+                      <Form.Control
+                        type="number"
+                        min="0"
+                        max="59"
+                        placeholder="0"
+                        value={student.minutes}
+                        onChange={(e) => handleStudentTimeChange(index, "minutes", e.target.value)}
+                        style={{ maxWidth: "80px" }}
+                      />
+                      <span className="text-muted small">mins</span>
+                    </div>
+                  </Form.Group>
+                ))
+              )}
+            </>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowConfirmModal(false)}>
+            Cancel
+          </Button>
+          <Button variant="success" onClick={executeConfirmJob}>
+            Confirm & Complete Job
+          </Button>
+        </Modal.Footer>
       </Modal>
     </div>
   );
