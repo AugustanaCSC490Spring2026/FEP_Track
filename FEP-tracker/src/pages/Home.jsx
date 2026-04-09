@@ -467,7 +467,7 @@ function Home({ user }) {
           </div>
         </div>
         <div className="d-flex gap-2">
-          {user?.role === "staff" && (
+          {user?.role === "staff" || user?.role === "admin" && (
             <div>
               <Button variant="primary" onClick={() => { setEditingEvent(null); resetForm(); setShowForm(true); }}>
                 + Add Event

@@ -22,7 +22,7 @@ const staffLink = {
 export default function Navbar({ user }) {
   const [isOpen, setIsOpen] = useState(false);
   // if the user is staff add the staff link in the middle of the nav links otherwise just show the base links  
-  const navLinks = user?.role === "staff"
+  const navLinks = user?.role === "admin"
     ? [...baseNavLinks.slice(0, 2), staffLink, ...baseNavLinks.slice(2)]
     : baseNavLinks;
   return (
