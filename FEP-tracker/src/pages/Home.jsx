@@ -58,7 +58,7 @@ function Home({ user }) {
 
   const resetForm = () => {
     setTitle(""); setStartTime(""); setEndTime(""); setSupervisor("");
-    setLocation(""); setExtraInfo(""); setStudentCap(999); setDate("");
+    setLocation(""); setExtraInfo(""); setStudentCap(1); setDate("");
     setValidated(false);
   };
 
@@ -183,6 +183,8 @@ function Home({ user }) {
     const eventData = {
       title,
       time: `${startTime} – ${endTime}`,
+      startTime: startTime,
+      endTime: endTime,
       supervisor: supervisor || "TBD",
       extra_details: extraInfo || "TBD",
       createdBy: user?.displayName || "Admin",
