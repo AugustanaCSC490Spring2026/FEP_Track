@@ -23,7 +23,6 @@ import Row from "react-bootstrap/Row";
 import Modal from "react-bootstrap/Modal";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 
-
 function Dashboard({ user }) {
   const [validated, setValidated] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -48,14 +47,14 @@ function Dashboard({ user }) {
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmingEvent, setConfirmingEvent] = useState(null);
-  const [confirmingStudents, setConfirmingStudents] = useState([]);
+  const [confirmingStudents, setConfirmingStudents] = useState({});
 
   const [currentTab, setCurrentTab] = useState("Upcoming");
-  
+
   const collectionMap = {
-    "Upcoming": "upcoming_events",
+    Upcoming: "upcoming_events",
     "Pending Approval": "pending_events",
-    "Completed": "completed_events",
+    Completed: "completed_events",
   };
   const tabNames = Object.keys(collectionMap);
 
@@ -63,15 +62,15 @@ function Dashboard({ user }) {
   useEffect(() => {
     const load = async () => {
       setLoading(true); // Start loading when tab changes
-      
+
       // 1. DYNAMICALLY GET THE COLLECTION NAME
       const collectionName = collectionMap[currentTab]; // Use the mapping defined above
-      
+
       // 2. QUERY THAT SPECIFIC COLLECTION
       // Note: This requires an index on 'createdAt' (Descending) in Firestore for THIS collection.
       const q = query(
         collection(database, collectionName),
-        orderBy("createdAt", "desc")
+        orderBy("createdAt", "desc"),
       );
 
       try {
@@ -80,7 +79,11 @@ function Dashboard({ user }) {
         setEvents(fetchedEvents);
       } catch (error) {
         // It's good practice to add error handling here
-        console.error("Error fetching events from collection:", collectionName, error);
+        console.error(
+          "Error fetching events from collection:",
+          collectionName,
+          error,
+        );
       } finally {
         setLoading(false);
       }
@@ -106,7 +109,7 @@ function Dashboard({ user }) {
     if (!form.checkValidity()) {
       e.stopPropagation();
       setValidated(true);
-      
+
       return;
     }
     const eventData = {
@@ -127,17 +130,19 @@ function Dashboard({ user }) {
     if (editingEvent) {
       await updateDoc(
         doc(database, "upcoming_events", editingEvent.id),
-        eventData
+        eventData,
       );
-  
+
       setEvents((prev) =>
         prev.map((ev) =>
-          ev.id === editingEvent.id ? { ...ev, ...eventData } : ev
-        )
+          ev.id === editingEvent.id ? { ...ev, ...eventData } : ev,
+        ),
       );
-  
-    } else { 
-      const newDoc = await addDoc(collection(database, "upcoming_events"), eventData);
+    } else {
+      const newDoc = await addDoc(
+        collection(database, "upcoming_events"),
+        eventData,
+      );
 
       setEvents((prev) => [
         ...prev,
@@ -163,7 +168,6 @@ function Dashboard({ user }) {
     setShowForm(false);
   };
 
-  
   const deleteEvent = async (id) => {
     await deleteDoc(doc(database, "upcoming_events", id));
     setEvents((prev) => prev.filter((e) => e.id !== id));
@@ -184,18 +188,27 @@ function Dashboard({ user }) {
   };
 
   const filteredEvents = events.filter((event) => {
-    const matchesTitle = event.title.toLowerCase().includes(searchTitle.toLowerCase());
-    const matchesBuilding = filterBuilding === "All" || event.location === filterBuilding;
-    const matchesSupervisor = filterSupervisor === "All" || event.supervisor === filterSupervisor;
+    const matchesTitle = event.title
+      .toLowerCase()
+      .includes(searchTitle.toLowerCase());
+    const matchesBuilding =
+      filterBuilding === "All" || event.location === filterBuilding;
+    const matchesSupervisor =
+      filterSupervisor === "All" || event.supervisor === filterSupervisor;
     const studentCount = event.students?.length || 0;
     const isFull = studentCount >= event.student_cap;
 
-    const matchesAvailability = 
-      filterAvailability === "All" || 
-      (filterAvailability === "Full" && isFull) || 
+    const matchesAvailability =
+      filterAvailability === "All" ||
+      (filterAvailability === "Full" && isFull) ||
       (filterAvailability === "Available" && !isFull);
-  
-    return matchesTitle && matchesBuilding && matchesSupervisor && matchesAvailability;
+
+    return (
+      matchesTitle &&
+      matchesBuilding &&
+      matchesSupervisor &&
+      matchesAvailability
+    );
   });
 
   // Opens the modal and maps existing students to a local state with calculated time
@@ -205,36 +218,44 @@ function Dashboard({ user }) {
     const defaultTime = calculateTimeDifference(event.startTime, event.endTime);
 
     const currentStudents = event.students || [];
-    const initializedStudents = currentStudents.map((studentId) => {
-
-      const studentAttendance = event.attendance ? event.attendance[studentId] : null;
+    const initializedStudents = {};
+    currentStudents.forEach((studentId) => {
+      const studentAttendance = event.attendance
+        ? event.attendance[studentId]
+        : null;
 
       if (studentAttendance) {
         const studentTimeIn = formatFirebaseTime(studentAttendance.timeIn);
         const studentTimeOut = formatFirebaseTime(studentAttendance.timeOut);
-        const timeDifference = calculateTimeDifference(studentTimeIn, studentTimeOut);
+        const timeDifference = calculateTimeDifference(
+          studentTimeIn,
+          studentTimeOut,
+        );
 
-        return {
+        initializedStudents[studentId] = {
           id: studentId,
           hours: timeDifference.hours ?? defaultTime.hours,
           minutes: timeDifference.minutes ?? defaultTime.minutes,
-          status: "Present"
+          status: "Present",
+          timeIn: studentTimeIn,
+          timeOut: studentTimeOut,
+        };
+      } else {
+        initializedStudents[studentId] = {
+          id: studentId,
+          hours: defaultTime.hours,
+          minutes: defaultTime.minutes,
+          status: "No Record",
+          timeIn: "--:--:--",
+          timeOut: "--:--:--",
         };
       }
-
-      return {
-        id: studentId,
-        hours: defaultTime.hours,
-        minutes: defaultTime.minutes,
-        status: "No Record"
-      };
     });
-
     setConfirmingStudents(initializedStudents);
     setShowConfirmModal(true);
   };
 
-  const handleStudentTimeChange = (index, field, value) => {
+  const handleStudentTimeChange = (studentId, field, value) => {
     const updated = [...confirmingStudents];
 
     let numValue = parseInt(value, 10);
@@ -242,7 +263,10 @@ function Dashboard({ user }) {
 
     if (field === "minutes" && numValue > 59) numValue = 59;
 
-    updated[index][field] = numValue;
+    const index = updated.findIndex((student) => student.id === studentId);
+    if (index !== -1) {
+      updated[index][field] = numValue;
+    }
     setConfirmingStudents(updated);
   };
 
@@ -252,9 +276,9 @@ function Dashboard({ user }) {
     try {
       const completedData = {
         ...confirmingEvent,
-        students: confirmingStudents,
+        attendance: confirmingStudents,
         status: "Verified",
-        completedAt: new Date()
+        completedAt: new Date(),
       };
 
       delete completedData.id;
@@ -298,17 +322,17 @@ function Dashboard({ user }) {
   };
 
   const formatFirebaseTime = (timestamp, use24Hour = true) => {
-    if (!timestamp || typeof timestamp.toDate !== 'function') {
+    if (!timestamp || typeof timestamp.toDate !== "function") {
       return "--:--:--";
     }
 
     const date = timestamp.toDate();
 
     return date.toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: !use24Hour
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: !use24Hour,
     });
   };
 
@@ -323,7 +347,7 @@ function Dashboard({ user }) {
       minutes = date.getMinutes();
       ampm = hours >= 12 ? "PM" : "AM";
     }
-    return `${((hours + 11) % 12) + 1}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+    return `${((hours + 11) % 12) + 1}:${minutes.toString().padStart(2, "0")} ${ampm}`;
   }
 
   const StudentName = ({ studentId, db }) => {
@@ -364,20 +388,33 @@ function Dashboard({ user }) {
         fontFamily: "sans-serif",
       }}
     >
-      <Row className="g-4"> 
+      <Row className="g-4">
         {/* LEFT COLUMN: Controls & Branding */}
         <Col lg={4} md={5} className="d-flex flex-column align-items-start">
           <div className="sticky-top" style={{ top: "20px", width: "100%" }}>
             <div className="mb-4">
-              <h2 style={{ color: "var(--color-primary-blue-light)", fontWeight: "700", marginBottom: "5px" }}>
+              <h2
+                style={{
+                  color: "var(--color-primary-blue-light)",
+                  fontWeight: "700",
+                  marginBottom: "5px",
+                }}
+              >
                 Admin Dashboard
               </h2>
-              <p style={{ color: "var(--color-text-secondary)", fontSize: "0.95rem", lineHeight: "1.4" }}>
-                Welcome back, <strong>{user.displayName || "Admin"}</strong>. 
-                Manage, track, and schedule upcoming student jobs from this panel.
+              <p
+                style={{
+                  color: "var(--color-text-secondary)",
+                  fontSize: "0.95rem",
+                  lineHeight: "1.4",
+                }}
+              >
+                Welcome back, <strong>{user.displayName || "Admin"}</strong>.
+                Manage, track, and schedule upcoming student jobs from this
+                panel.
               </p>
             </div>
-            
+
             <Button
               variant={showForm ? "outline-secondary" : "primary"}
               className="w-100 py-2 mb-3 shadow-sm"
@@ -391,16 +428,25 @@ function Dashboard({ user }) {
             </Button>
 
             {/* Filter Box */}
-            <div className="p-3 rounded shadow-sm" style={{ backgroundColor: "var(--color-bg-darker)", border: "1px solid #334155" }}>
+            <div
+              className="p-3 rounded shadow-sm"
+              style={{
+                backgroundColor: "var(--color-bg-darker)",
+                border: "1px solid #334155",
+              }}
+            >
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <small style={{ color: "var(--color-text-secondary)" }}>
                   Active Jobs: <strong>{events.length}</strong>
                 </small>
-                <Button 
-                  variant="link" 
-                  size="sm" 
-                  className="p-0 text-decoration-none" 
-                  style={{ color: "var(--color-accent-yellow)", fontSize: "0.75rem" }}
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="p-0 text-decoration-none"
+                  style={{
+                    color: "var(--color-accent-yellow)",
+                    fontSize: "0.75rem",
+                  }}
                   onClick={() => {
                     setSearchTitle("");
                     setFilterBuilding("All");
@@ -415,58 +461,112 @@ function Dashboard({ user }) {
               <Form>
                 {/* Search Title */}
                 <Form.Group className="mb-3">
-                  <Form.Label className="small text-uppercase" style={{ color: "var(--color-text-secondary)", fontSize: "0.7rem" }}>Search Title</Form.Label>
-                  <Form.Control 
+                  <Form.Label
+                    className="small text-uppercase"
+                    style={{
+                      color: "var(--color-text-secondary)",
+                      fontSize: "0.7rem",
+                    }}
+                  >
+                    Search Title
+                  </Form.Label>
+                  <Form.Control
                     size="sm"
-                    type="text" 
-                    placeholder="Type to search..." 
+                    type="text"
+                    placeholder="Type to search..."
                     value={searchTitle}
                     onChange={(e) => setSearchTitle(e.target.value)}
-                    style={{ backgroundColor: "var(--color-bg-card)", color: "white", border: "1px solid #475569" }}
+                    style={{
+                      backgroundColor: "var(--color-bg-card)",
+                      color: "white",
+                      border: "1px solid #475569",
+                    }}
                   />
                 </Form.Group>
 
                 {/* Building Filter */}
                 <Form.Group className="mb-3">
-                  <Form.Label className="small text-uppercase" style={{ color: "var(--color-text-secondary)", fontSize: "0.7rem" }}>Building</Form.Label>
-                  <Form.Select 
-                    size="sm" 
+                  <Form.Label
+                    className="small text-uppercase"
+                    style={{
+                      color: "var(--color-text-secondary)",
+                      fontSize: "0.7rem",
+                    }}
+                  >
+                    Building
+                  </Form.Label>
+                  <Form.Select
+                    size="sm"
                     value={filterBuilding}
                     onChange={(e) => setFilterBuilding(e.target.value)}
-                    style={{ backgroundColor: "var(--color-bg-card)", color: "white", border: "1px solid #475569" }}
+                    style={{
+                      backgroundColor: "var(--color-bg-card)",
+                      color: "white",
+                      border: "1px solid #475569",
+                    }}
                   >
                     <option value="All">All Buildings</option>
-                    {[...new Set(events.map(e => e.location))].map(loc => (
-                      <option key={loc} value={loc}>{loc}</option>
+                    {[...new Set(events.map((e) => e.location))].map((loc) => (
+                      <option key={loc} value={loc}>
+                        {loc}
+                      </option>
                     ))}
                   </Form.Select>
                 </Form.Group>
 
                 {/* Supervisor Filter */}
                 <Form.Group className="mb-3">
-                  <Form.Label className="small text-uppercase" style={{ color: "var(--color-text-secondary)", fontSize: "0.7rem" }}>Supervisor</Form.Label>
-                  <Form.Select 
-                    size="sm" 
+                  <Form.Label
+                    className="small text-uppercase"
+                    style={{
+                      color: "var(--color-text-secondary)",
+                      fontSize: "0.7rem",
+                    }}
+                  >
+                    Supervisor
+                  </Form.Label>
+                  <Form.Select
+                    size="sm"
                     value={filterSupervisor}
                     onChange={(e) => setFilterSupervisor(e.target.value)}
-                    style={{ backgroundColor: "var(--color-bg-card)", color: "white", border: "1px solid #475569" }}
+                    style={{
+                      backgroundColor: "var(--color-bg-card)",
+                      color: "white",
+                      border: "1px solid #475569",
+                    }}
                   >
                     <option value="All">All Supervisors</option>
-                    {[...new Set(events.map(e => e.supervisor))].map(sup => (
-                      <option key={sup} value={sup}>{sup}</option>
-                    ))}
+                    {[...new Set(events.map((e) => e.supervisor))].map(
+                      (sup) => (
+                        <option key={sup} value={sup}>
+                          {sup}
+                        </option>
+                      ),
+                    )}
                   </Form.Select>
                 </Form.Group>
 
                 {/* Availability Toggle */}
                 <Form.Group>
-                  <Form.Label className="small text-uppercase" style={{ color: "var(--color-text-secondary)", fontSize: "0.7rem" }}>Availability</Form.Label>
+                  <Form.Label
+                    className="small text-uppercase"
+                    style={{
+                      color: "var(--color-text-secondary)",
+                      fontSize: "0.7rem",
+                    }}
+                  >
+                    Availability
+                  </Form.Label>
                   <div className="d-flex gap-2">
                     {["All", "Available", "Full"].map((status) => (
                       <Button
                         key={status}
                         size="sm"
-                        variant={filterAvailability === status ? "primary" : "outline-secondary"}
+                        variant={
+                          filterAvailability === status
+                            ? "primary"
+                            : "outline-secondary"
+                        }
                         onClick={() => setFilterAvailability(status)}
                         style={{ fontSize: "0.7rem", flex: 1 }}
                       >
@@ -497,32 +597,42 @@ function Dashboard({ user }) {
               ))}
             </ButtonGroup>
           </div>
-          
+
           {loading ? (
             // Update loading text
-            <p className="text-center text-muted">Loading {currentTab.toLowerCase()} jobs...</p>
+            <p className="text-center text-muted">
+              Loading {currentTab.toLowerCase()} jobs...
+            </p>
           ) : (
             <div className="event-scroll-container">
               {filteredEvents.length === 0 ? (
                 // Update empty state text
-                <div className="text-center py-5 rounded" style={{ backgroundColor: "var(--color-bg-darker)", border: "1px solid #334155" }}>
-                  <p style={{ color: "var(--color-text-secondary)" }}>No {currentTab.toLowerCase()} jobs match your filters.</p>
+                <div
+                  className="text-center py-5 rounded"
+                  style={{
+                    backgroundColor: "var(--color-bg-darker)",
+                    border: "1px solid #334155",
+                  }}
+                >
+                  <p style={{ color: "var(--color-text-secondary)" }}>
+                    No {currentTab.toLowerCase()} jobs match your filters.
+                  </p>
                 </div>
               ) : (
                 filteredEvents.map((event) => (
-                    <EventCard
-                        key={event.id}
-                        event={event}
-                        status={currentTab} // Pass "Upcoming", "Pending Approval", or "Completed"
-                        onConfirm={handleOpenConfirmModal}
-                        onEdit={handleEditEvent}
-                        onCallBack={async (id) => {
-                          const collectionName = collectionMap[currentTab];
-                          await deleteDoc(doc(database, collectionName, id));
-                          setEvents((prev) => prev.filter((e) => e.id !== id));
-                        }}
-                        user={user}
-                    />
+                  <EventCard
+                    key={event.id}
+                    event={event}
+                    status={currentTab} // Pass "Upcoming", "Pending Approval", or "Completed"
+                    onConfirm={handleOpenConfirmModal}
+                    onEdit={handleEditEvent}
+                    onCallBack={async (id) => {
+                      const collectionName = collectionMap[currentTab];
+                      await deleteDoc(doc(database, collectionName, id));
+                      setEvents((prev) => prev.filter((e) => e.id !== id));
+                    }}
+                    user={user}
+                  />
                 ))
               )}
             </div>
@@ -530,8 +640,12 @@ function Dashboard({ user }) {
         </Col>
       </Row>
 
-
-      <Modal show={showForm} onHide={() => setShowForm(false)} centered size="lg">
+      <Modal
+        show={showForm}
+        onHide={() => setShowForm(false)}
+        centered
+        size="lg"
+      >
         <Modal.Header closeButton>
           <Modal.Title>{editingEvent ? "Edit Event" : "New Event"}</Modal.Title>
         </Modal.Header>
@@ -655,7 +769,11 @@ function Dashboard({ user }) {
         </Modal.Body>
       </Modal>
 
-      <Modal show={showConfirmModal} onHide={() => setShowConfirmModal(false)} centered>
+      <Modal
+        show={showConfirmModal}
+        onHide={() => setShowConfirmModal(false)}
+        centered
+      >
         <Modal.Header closeButton>
           <Modal.Title>Confirm Job & Adjust Hours</Modal.Title>
         </Modal.Header>
@@ -663,15 +781,26 @@ function Dashboard({ user }) {
           {confirmingEvent && (
             <>
               <h5>{confirmingEvent.title}</h5>
-              <p className="text-muted mb-4">{confirmingEvent.date} | {timeFormat(confirmingEvent.startTime)} - {timeFormat(confirmingEvent.endTime)}</p>
+              <p className="text-muted mb-4">
+                {confirmingEvent.date} | {timeFormat(confirmingEvent.startTime)}{" "}
+                - {timeFormat(confirmingEvent.endTime)}
+              </p>
 
               <h6 className="mb-3">Student Time Worked</h6>
-              {confirmingStudents.length === 0 ? (
-                <p className="text-muted">No students registered for this job.</p>
+              {Object.keys(confirmingStudents).length === 0 ? (
+                <p className="text-muted">
+                  No students registered for this job.
+                </p>
               ) : (
-                confirmingStudents.map((student, index) => (
-                  <Form.Group key={index} className="mb-3 d-flex align-items-center">
-                    <Form.Label className="mb-0 me-3" style={{ minWidth: "150px", fontWeight: "500" }}>
+                Object.values(confirmingStudents).map((student, index) => (
+                  <Form.Group
+                    key={index}
+                    className="mb-3 d-flex align-items-center"
+                  >
+                    <Form.Label
+                      className="mb-0 me-3"
+                      style={{ minWidth: "150px", fontWeight: "500" }}
+                    >
                       <StudentName studentId={student.id} db={database} />
                     </Form.Label>
 
@@ -681,7 +810,13 @@ function Dashboard({ user }) {
                         min="0"
                         placeholder="0"
                         value={student.hours}
-                        onChange={(e) => handleStudentTimeChange(index, "hours", e.target.value)}
+                        onChange={(e) =>
+                          handleStudentTimeChange(
+                            student.id,
+                            "hours",
+                            e.target.value,
+                          )
+                        }
                         style={{ maxWidth: "80px" }}
                       />
                       <span className="text-muted small">hrs</span>
@@ -692,7 +827,13 @@ function Dashboard({ user }) {
                         max="59"
                         placeholder="0"
                         value={student.minutes}
-                        onChange={(e) => handleStudentTimeChange(index, "minutes", e.target.value)}
+                        onChange={(e) =>
+                          handleStudentTimeChange(
+                            student.id,
+                            "minutes",
+                            e.target.value,
+                          )
+                        }
                         style={{ maxWidth: "80px" }}
                       />
                       <span className="text-muted small">mins</span>
@@ -704,7 +845,10 @@ function Dashboard({ user }) {
           )}
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowConfirmModal(false)}>
+          <Button
+            variant="secondary"
+            onClick={() => setShowConfirmModal(false)}
+          >
             Cancel
           </Button>
           <Button variant="success" onClick={executeConfirmJob}>

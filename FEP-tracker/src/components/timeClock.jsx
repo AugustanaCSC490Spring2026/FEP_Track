@@ -64,14 +64,7 @@ const upcomingJobs = sortedJobs.filter((job) => {
       month: "short",
       day: "numeric",
     });
-  const fmtShort = (d) => {
-    const date = d?.toDate ? d.toDate() : new Date(d);
-    return (
-      date.toLocaleDateString(undefined, { month: "short", day: "numeric" }) +
-      " · " +
-      date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
-    );
-  };
+ 
 
   const lastEntry = log[log.length - 1];
   const isClockedIn = lastEntry?.type === "IN";
@@ -322,7 +315,7 @@ const upcomingJobs = sortedJobs.filter((job) => {
                             <span
                               className={`small ${isSelected ? "text-white" : "text-muted"}`}
                             >
-                              {fmtShort(job.date)}
+                              {new Date(job.date).toString().slice(0, 10)} at new {job.startTime}
                             </span>
                           </button>
                         );
