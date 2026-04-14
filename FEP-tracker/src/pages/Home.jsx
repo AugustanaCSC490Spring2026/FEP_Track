@@ -290,7 +290,7 @@ function Home({ user }) {
             padding: "4px",
             fontSize: "11px",
             overflow: "hidden",
-            zIndex: 10,
+            zIndex: 5,
             border: "1px solid white",
             boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
             cursor: "pointer",
@@ -351,7 +351,7 @@ function Home({ user }) {
             borderRadius: "4px",
             padding: "4px",
             fontSize: "10px",
-            zIndex: 1,
+            zIndex: 10,
             pointerEvents: "none",
           }}
         >
