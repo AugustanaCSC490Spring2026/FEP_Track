@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { database } from "../firebase-config";
-import { collection, getDocs, doc, updateDoc, arrayUnion, addDoc, deleteDoc } from "firebase/firestore";
+import { collection, getDocs, getDoc, doc, updateDoc, arrayUnion, addDoc, deleteDoc } from "firebase/firestore";
 import { startOfWeek, addDays, format, subWeeks, addWeeks } from "date-fns";
 import Card from "react-bootstrap/Card";
 import Button from "react-bootstrap/Button";
@@ -16,6 +16,22 @@ function Home({ user }) {
   const [events, setEvents] = useState([]);
   const [googleEvents, setGoogleEvents] = useState([]);
   const [showGoogleCalendar, setShowGoogleCalendar] = useState(false);
+  const [prefLoaded, setPrefLoaded] = useState(false);
+
+  useEffect(() =>{
+ 
+    const loadPref = async() =>{
+      if(!user?.uid) return;
+        const userRef = doc(database,"users",user.uid);
+        const snap = await getDoc(userRef);
+        if (snap.exists()){
+          const data = snap.data();
+          setShowGoogleCalendar(data.preferences?.showGoogleCalendar ?? false);
+        }
+      setPrefLoaded(true);
+    };
+    loadPref();
+  }, [user])
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState(null);
 
@@ -83,7 +99,7 @@ function Home({ user }) {
     }
 
     const fetchGoogleCalendar = async () => {
-      let token = sessionStorage.getItem("google_access_token");
+      let token = localStorage.getItem("google_access_token");
 
       if (!token) {
         try {
@@ -95,7 +111,7 @@ function Home({ user }) {
           token = credential.accessToken;
           
           if (token) {
-            sessionStorage.setItem("google_access_token", token);
+            localStorage.setItem("google_access_token", token);
           }
         } catch (error) {
           console.error("Token refresh failed:", error);
@@ -448,7 +464,18 @@ function Home({ user }) {
               id="google-calendar-toggle"
               label=" Show Google Calendar"
               checked={showGoogleCalendar}
-              onChange={() => setShowGoogleCalendar(!showGoogleCalendar)}
+              onChange = {async () => {
+                const newValue = !showGoogleCalendar;
+                setShowGoogleCalendar(newValue);
+
+                try{
+                  await updateDoc(doc(database,"users",user.uid),{
+                    "preferences.showGoogleCalendar": newValue
+                  });
+                }catch (err){
+                  console.error("Error saving preference", err);
+                }
+              }}
               style={{ cursor: "pointer", marginBottom: 0, color: "#2563eb" }}
             />
           </div>
