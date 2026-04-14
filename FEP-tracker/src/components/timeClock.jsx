@@ -8,11 +8,13 @@ function TimeClockModal({ user, jobs = [] }) {
   const [log, setLog] = useState(() => {
     try {
       const saved = localStorage.getItem(`timelog_${user?.uid}`);
-      return saved
-        ? JSON.parse(saved, (key, val) =>
-            key === "time" ? new Date(val) : val,
-          )
-        : [];
+      if (!saved) return [];
+
+      const aweek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+      return JSON.parse(saved, (key, val) =>
+        key === "time" ? new Date(val) : val,
+      ).filter((entry) => entry.time && new Date(entry.time) > aweek);
     } catch {
       return [];
     }
@@ -35,28 +37,28 @@ function TimeClockModal({ user, jobs = [] }) {
     }
   }, [log, user?.uid]);
 
-const parseDate = (date) => {
-  if (date?.toDate) return date.toDate(); 
-  const [year, month, day] = date.split("-").map(Number);
-  return new Date(year, month - 1, day); // local midnight, since the times in the firestore is in a diffrent timezone and we only care about the date part we can just parse it as local time to avoid timezone issues
-};
+  const parseDate = (date) => {
+    if (date?.toDate) return date.toDate();
+    const [year, month, day] = date.split("-").map(Number);
+    return new Date(year, month - 1, day); // local midnight, since the times in the firestore is in a diffrent timezone and we only care about the date part we can just parse it as local time to avoid timezone issues
+  };
 
-const sortedJobs = [...jobs].sort((a, b) => {
-  return parseDate(a.date) - parseDate(b.date);
-});
+  const sortedJobs = [...jobs].sort((a, b) => {
+    return parseDate(a.date) - parseDate(b.date);
+  });
 
-const upcomingJobs = sortedJobs.filter((job) => {
-  const jobDate = parseDate(job.date);
-  const userAttendance = job.attendance?.[user?.uid];
+  const upcomingJobs = sortedJobs.filter((job) => {
+    const jobDate = parseDate(job.date);
+    const userAttendance = job.attendance?.[user?.uid];
 
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
 
-  const isFuture = jobDate >= startOfToday;
-  const notYetClockedIn = !userAttendance?.timeIn;
+    const isFuture = jobDate >= startOfToday;
+    const notYetClockedIn = !userAttendance?.timeIn;
 
-  return isFuture && notYetClockedIn;
-});
+    return isFuture && notYetClockedIn;
+  });
   const fmt = (d) => (d instanceof Date ? d : new Date(d)).toLocaleTimeString();
   const fmtDate = (d) =>
     (d instanceof Date ? d : new Date(d)).toLocaleDateString(undefined, {
@@ -64,7 +66,6 @@ const upcomingJobs = sortedJobs.filter((job) => {
       month: "short",
       day: "numeric",
     });
- 
 
   const lastEntry = log[log.length - 1];
   const isClockedIn = lastEntry?.type === "IN";
@@ -321,7 +322,8 @@ const upcomingJobs = sortedJobs.filter((job) => {
                             <span
                               className={`small ${isSelected ? "text-white" : "text-muted"}`}
                             >
-                              {new Date(job.date).toString().slice(0, 10)} at new {job.startTime}
+                              {new Date(job.date).toString().slice(0, 10)} at
+                              new {job.startTime}
                             </span>
                           </button>
                         );
