@@ -132,7 +132,9 @@ function Home({ user }) {
         const data = await response.json();
         
         if (data.error?.code === 401) {
-          sessionStorage.removeItem("google_access_token");
+          console.warn("token expired, removing")
+          localStorage.removeItem("google_access_token");
+          setShowGoogleCalendar(false)
           return;
         }
 
