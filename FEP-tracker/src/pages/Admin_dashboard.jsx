@@ -424,7 +424,7 @@ function Dashboard({ user }) {
                 resetForm();
               }}
             >
-              {showForm ? "✕ Cancel" : "+ Create New Event"}
+              {showForm ? "✕ Cancel" : "+ Create New Job"}
             </Button>
 
             {/* Filter Box */}

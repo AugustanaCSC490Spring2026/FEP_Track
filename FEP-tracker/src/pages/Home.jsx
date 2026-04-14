@@ -74,7 +74,7 @@ function Home({ user }) {
 
   const resetForm = () => {
     setTitle(""); setStartTime(""); setEndTime(""); setSupervisor("");
-    setLocation(""); setExtraInfo(""); setStudentCap(999); setDate("");
+    setLocation(""); setExtraInfo(""); setStudentCap(1); setDate("");
     setValidated(false);
   };
 
@@ -198,6 +198,8 @@ function Home({ user }) {
 
     const eventData = {
       title,
+      startTime,
+      endTime,
       time: `${startTime} – ${endTime}`,
       supervisor: supervisor || "TBD",
       extra_details: extraInfo || "TBD",
@@ -497,7 +499,7 @@ function Home({ user }) {
           {user?.role === "staff" || user?.role === "admin" && (
             <div>
               <Button variant="primary" onClick={() => { setEditingEvent(null); resetForm(); setShowForm(true); }}>
-                + Add Event
+                + Add Job
               </Button>
             </div>
             )}
