@@ -256,18 +256,17 @@ function Dashboard({ user }) {
   };
 
   const handleStudentTimeChange = (studentId, field, value) => {
-    const updated = [...confirmingStudents];
-
     let numValue = parseInt(value, 10);
     if (isNaN(numValue) || numValue < 0) numValue = 0;
-
     if (field === "minutes" && numValue > 59) numValue = 59;
 
-    const index = updated.findIndex((student) => student.id === studentId);
-    if (index !== -1) {
-      updated[index][field] = numValue;
-    }
-    setConfirmingStudents(updated);
+    setConfirmingStudents((prev) => ({
+      ...prev,
+      [studentId]: {
+        ...prev[studentId],
+        [field]: numValue,
+      },
+    }));
   };
 
   const executeConfirmJob = async () => {
