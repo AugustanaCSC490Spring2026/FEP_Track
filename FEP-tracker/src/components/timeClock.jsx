@@ -174,34 +174,40 @@ const upcomingJobs = sortedJobs.filter((job) => {
 
         {/* ── Log ── */}
         {log.length > 0 && (
-          <div
-            className="card shadow-sm mt-4"
-            style={{ maxWidth: 380, width: "100%" }}
-          >
-            <div className="card-header fw-semibold">Time Log</div>
-            <ul className="list-group list-group-flush">
-              {[...log].reverse().map((e, i) => (
-                <li
-                  key={i}
-                  className="list-group-item d-flex justify-content-between align-items-center"
-                >
-                  <div className="d-flex align-items-center gap-2">
-                    <span
-                      className={`badge ${e.type === "IN" ? "bg-success" : "bg-danger"}`}
+          <div className="card shadow-sm mt-4" style={{ maxWidth: 380, width: "100%" }}>
+            <div className="card-header fw-semibold d-flex justify-content-between align-items-center">
+              <span>Time Log</span>
+              <small className="text-muted">{log.length} entries</small>
+            </div>
+
+            {/* Wrap the list in this scrollable div */}
+            <div style={{
+              maxHeight: "250px",
+              overflowY: "auto",
+              scrollbarWidth: "thin"
+            }}>
+              <ul className="list-group list-group-flush">
+                {[...log].reverse().map((e, i) => (
+                    <li
+                        key={i}
+                        className="list-group-item d-flex justify-content-between align-items-center"
+                        style={{ padding: "0.75rem 1rem" }}
                     >
-                      {e.type}
-                    </span>
-                    <span className="small">{e.jobTitle}</span>
-                  </div>
-                  <span
-                    className="font-monospace small text-muted"
-                    style={{ fontVariantNumeric: "tabular-nums" }}
-                  >
-                    {fmt(e.time)}
-                  </span>
-                </li>
-              ))}
-            </ul>
+                      <div className="d-flex align-items-center gap-2">
+                        <span className={`badge ${e.type === "IN" ? "bg-success" : "bg-danger"}`} style={{ minWidth: "45px" }}>
+                          {e.type}
+                        </span>
+                        <span className="small text-truncate" style={{ maxWidth: "150px" }}>
+                          {e.jobTitle}
+                        </span>
+                      </div>
+                      <span className="font-monospace small text-muted" style={{ fontVariantNumeric: "tabular-nums" }}>
+                        {fmt(e.time)}
+                      </span>
+                    </li>
+                ))}
+              </ul>
+            </div>
           </div>
         )}
       </div>

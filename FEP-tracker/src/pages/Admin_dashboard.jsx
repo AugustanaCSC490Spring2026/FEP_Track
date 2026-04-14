@@ -581,13 +581,12 @@ function Dashboard({ user }) {
         </Col>
 
         {/* RIGHT COLUMN: The Scrollable List */}
-        <Col lg={8} md={7}>
+        <Col lg={8} md={7} style={{ borderLeft: "1px solid #334155" }}>
           <div className="mb-4 d-flex justify-content-between align-items-center">
             <ButtonGroup>
               {tabNames.map((tab) => (
                 <Button
                   key={tab}
-                  // Highlight the active tab
                   variant={currentTab === tab ? "primary" : "outline-primary"}
                   onClick={() => setCurrentTab(tab)}
                   style={{ fontWeight: currentTab === tab ? "600" : "400" }}
@@ -599,14 +598,12 @@ function Dashboard({ user }) {
           </div>
 
           {loading ? (
-            // Update loading text
             <p className="text-center text-muted">
               Loading {currentTab.toLowerCase()} jobs...
             </p>
           ) : (
             <div className="event-scroll-container">
               {filteredEvents.length === 0 ? (
-                // Update empty state text
                 <div
                   className="text-center py-5 rounded"
                   style={{

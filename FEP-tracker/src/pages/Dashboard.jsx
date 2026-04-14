@@ -11,6 +11,7 @@ import {
 } from "firebase/firestore"
 import EventCard from "../components/event-card";
 import TimeClockModal from "../components/timeClock";
+import { Row, Col, Container } from "react-bootstrap";
 function Dashboard({ user }) {
 
   const [myCurrentJobs, setMyCurrentJobs] = useState([])
@@ -87,31 +88,57 @@ function Dashboard({ user }) {
   const jobToDrop = myCurrentJobs.find(j => j.id === confirmDropId)
 
   return (
-    <div style={{ maxWidth: "600px", margin: "auto", fontFamily: "sans-serif", paddingTop: "30px", paddingBottom: "40px", paddingLeft: "16px", paddingRight: "16px" }}>
-
+    <div style={{ maxWidth: "1200px", margin: "auto", padding: "40px 20px", fontFamily: "sans-serif" }}>
       {confirmDropId && jobToDrop && <ConfirmDropModal job={jobToDrop} />}
 
-      <h1 style={{ textAlign: "center", fontSize: "26px", fontWeight: "700", marginBottom: "24px" }}>
-        My Current Jobs
-      </h1>
+      <Row className="g-4">
+        {/* LEFT COLUMN: User Summary & Actions */}
+        <Col lg={5} md={6} className="d-flex flex-column align-items-start">
+          <div className="sticky-top" style={{ top: "20px", width: "100%" }}>
+            <div className="mb-4">
+              <h2 style={{ color: "var(--color-primary-blue-light)", fontWeight: "700", marginBottom: "5px" }}>
+                My Dashboard
+              </h2>
+              <p style={{ color: "var(--color-text-secondary)", fontSize: "0.95rem", lineHeight: "1.4" }}>
+                Welcome, <strong>{user.displayName || "Student"}</strong>.
+                View your schedule and use the clock to track your hours.
+              </p>
+            </div>
 
-      {myCurrentJobs.length === 0 ? (
-        <p style={{ color: "#888", textAlign: "center" }}>You are not signed up for any jobs yet.</p>
-      ) : (
-        myCurrentJobs.map((job) => (
-          <EventCard
-            key={job.id}
-            event={job}
-            user={user}
-            status="MyJobs"
-            onCallBack={handleDrop}
-            onEdit={() => {}}
-          />
-        ))
-      )}
-      <div style={{ marginTop: "40px", textAlign: "center" }}>
-        <TimeClockModal user={user} jobs={myCurrentJobs} />
-      </div>
+            <div className="p-4 rounded shadow-sm mb-3" style={{ backgroundColor: "var(--color-bg-card)", border: "1px solid var(--color-bg-darker)" }}>
+              <TimeClockModal user={user} jobs={myCurrentJobs} />
+            </div>
+          </div>
+        </Col>
+
+        {/* RIGHT COLUMN: The Job List */}
+        <Col lg={7} md={6} style={{ borderLeft: "1px solid #334155" }}>
+          <h3 className="mb-4" style={{ color: "var(--color-primary-blue-light)", fontWeight: "700" }}>Current Jobs</h3>
+          <div className="mb-4">
+            <small style={{ color: "var(--color-text-secondary)", fontSize: "0.9rem" }}>
+              Total Jobs Scheduled: <strong style={{ color: "var(--color-primary-blue-light)" }}>{myCurrentJobs.length}</strong>
+            </small>
+          </div>
+          {myCurrentJobs.length === 0 ? (
+              <div className="text-center py-5 rounded" style={{ backgroundColor: "var(--color-bg-card)", border: "1px solid var(--color-bg-darker)" }}>
+                <p style={{ color: "#888", margin: 0 }}>You are not signed up for any jobs yet.</p>
+              </div>
+          ) : (
+              <div className="event-scroll-container">
+                {myCurrentJobs.map((job) => (
+                    <EventCard
+                      key={job.id}
+                      event={job}
+                      user={user}
+                      status="MyJobs"
+                      onCallBack={handleDrop}
+                      onEdit={() => {}}
+                    />
+                ))}
+              </div>
+          )}
+        </Col>
+      </Row>
     </div>
   )
 }
