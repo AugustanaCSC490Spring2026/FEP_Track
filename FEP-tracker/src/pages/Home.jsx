@@ -206,6 +206,7 @@ function Home({ user }) {
       supervisor: supervisor || "TBD",
       extra_details: extraInfo || "TBD",
       createdBy: user?.displayName || "Admin",
+      createdByID: user,
       location: location || "TBD",
       student_cap: studentCap,
       date: date || "TBD",
@@ -418,7 +419,7 @@ function Home({ user }) {
               <Form.Label>Extra Information</Form.Label>
               <Form.Control as="textarea" rows={2} value={extraInfo} onChange={(e) => setExtraInfo(e.target.value)} />
             </Form.Group>
-            <Button type="submit" variant="success">{editingEvent ? "Update Event" : "Create Event"}</Button>
+            <Button type="submit" variant="success">{editingEvent ? "Update Job" : "Create Job"}</Button>
           </Form>
         </Modal.Body>
       </Modal>

@@ -50,7 +50,7 @@ function Dashboard({ user }) {
   }
 
   const ConfirmDropModal = ({ job }) => (
-    <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "flex-start", paddingTop: "100px", justifyContent: "center", zIndex: 100 }}>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", paddingTop: "100px", justifyContent: "center", zIndex: 9999 }}>
       <div style={{ background: "#fff", borderRadius: "14px", padding: "28px 28px 24px", maxWidth: "360px", width: "90%", boxShadow: "0 8px 32px rgba(0,0,0,0.18)" }}>
         <div style={{ fontSize: "20px", fontWeight: "700", marginBottom: "10px", color: "#1e293b" }}>Drop this job?</div>
         <div style={{ fontSize: "14px", color: "#555", marginBottom: "6px" }}>
@@ -89,6 +89,8 @@ function Dashboard({ user }) {
 
   return (
     <div style={{ maxWidth: "1200px", margin: "auto", padding: "40px 20px", fontFamily: "sans-serif" }}>
+      {confirmDropId && jobToDrop && <ConfirmDropModal job={jobToDrop} />}
+
       <Row className="g-4">
         {/* LEFT COLUMN: User Summary & Actions */}
         <Col lg={5} md={6} className="d-flex flex-column align-items-start">
@@ -110,9 +112,7 @@ function Dashboard({ user }) {
         </Col>
 
         {/* RIGHT COLUMN: The Job List */}
-        <Col lg={7} md={6} style={{ position: "relative", borderLeft: "1px solid #334155" }}>
-          {confirmDropId && jobToDrop && <ConfirmDropModal job={jobToDrop} />}
-
+        <Col lg={7} md={6} style={{ borderLeft: "1px solid #334155" }}>
           <h3 className="mb-4" style={{ color: "var(--color-primary-blue-light)", fontWeight: "700" }}>Current Jobs</h3>
           <div className="mb-4">
             <small style={{ color: "var(--color-text-secondary)", fontSize: "0.9rem" }}>

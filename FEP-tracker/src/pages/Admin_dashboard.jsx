@@ -120,6 +120,7 @@ function Dashboard({ user }) {
       supervisor: supervisor || "TBD",
       extra_details: extraInfo || "TBD",
       createdBy: user.displayName,
+      createdByID: user,
       location: location || "TBD",
       student_cap: studentCap,
       date: date || "TBD",
@@ -153,6 +154,7 @@ function Dashboard({ user }) {
           endTime,
           time: `${startTime} – ${endTime}`,
           supervisor: supervisor || "TBD",
+          createdByID: user,
           extra_details: extraInfo || "TBD",
           location: location || "TBD",
           student_cap: studentCap,
@@ -758,7 +760,7 @@ function Dashboard({ user }) {
                 </Form.Group>
               </Row>
               <Button type="submit" variant="success">
-                {editingEvent ? "Update Event" : "Create Event"}
+                {editingEvent ? "Update Jop" : "Create Job"}
               </Button>
             </Form>
           </Card>

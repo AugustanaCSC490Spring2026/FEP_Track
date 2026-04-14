@@ -1,0 +1,58 @@
+[Debug] [vite] connecting... (client, line 733)
+[Debug] [vite] connected. (client, line 827)
+[Log] useAuth - Role: – "student" – "Exists:" – true (useAuth.jsx, line 19)
+[Log] Profile - User: – null – "Is Registered:" – false – "Loading:" – true (Profile.jsx, line 11)
+[Log] Profile - User: – null – "Is Registered:" – false – "Loading:" – true (Profile.jsx, line 11)
+[Log] useAuth - Role: – "student" – "Exists:" – true (useAuth.jsx, line 19)
+[Log] Profile - User: (5) (Profile.jsx, line 11)
+Object
+"Is Registered:"
+true
+"Loading:"
+false
+[Log] Profile - User: (5) (Profile.jsx, line 11)
+Object
+"Is Registered:"
+true
+"Loading:"
+false
+[Debug] [vite] – "hot updated: /src/components/event-card.jsx" (client, line 220)
+> Selected Element
+< <div class="event-scroll-container">…</div>
+[Log] undefined (event-card.jsx, line 46)
+[Debug] [vite] – "hot updated: /src/components/event-card.jsx" (client, line 220)
+[Log] Object (event-card.jsx, line 46)
+
+createdAt: _Timestamp {seconds: 1776197790, nanoseconds: 335000000}
+
+createdBy: "Thomas Klein"
+
+createdByID: {uid: "iugxFcfEwCNiYIORS1k5LWt5xCl1", email: "thomasklein23@augustana.edu", role: "admin", displayName: "Thomas Klein"}
+
+date: "2026-04-14"
+
+endTime: "18:00"
+
+extra_details: "TBD"
+
+id: "MY9rki4V4bbTuzVVNkPN"
+
+location: "Olin"
+
+startTime: "16:00"
+
+student_cap: "3"
+
+students: ["iugxFcfEwCNiYIORS1k5LWt5xCl1"] (1)
+
+supervisor: "TJ"
+
+time: "16:00 – 18:00"
+
+title: "Test Contact Supervisor"
+
+Object Prototype
+
+[Log] undefined (event-card.jsx, line 47)
+[Log] {id: "MY9rki4V4bbTuzVVNkPN", supervisor: "TJ", endTime: "18:00", startTime: "16:00", date: "2026-04-14", …} (event-card.jsx, line 46)
+[Log] undefined (event-card.jsx, line 47)

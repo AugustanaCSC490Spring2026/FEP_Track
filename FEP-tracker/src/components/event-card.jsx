@@ -5,6 +5,10 @@ import Badge from "react-bootstrap/Badge";
 import { useLocation } from "react-router-dom";
 import Row from "react-bootstrap/esm/Row";
 import Col from "react-bootstrap/esm/Col";
+import Modal from "react-bootstrap/Modal";
+import { useState } from "react";
+import { database } from "../firebase-config";
+import { doc, getDoc } from "firebase/firestore";
 
 export default function EventCard({
   event,
@@ -30,6 +34,43 @@ export default function EventCard({
   const hasApplied = event.students?.includes(user?.uid);
   const startTime = timeFormat(event.startTime) || null;
   const endTime = timeFormat(event.endTime) || "TBD";
+
+  const eventDateTime = new Date(`${event.date}T${event.startTime}:00`);
+  const now = new Date();
+  const diffInMs = eventDateTime - now;
+  const diffInHours = diffInMs / (1000 * 60 * 60);
+  const tooLateToDrop = diffInHours < 1;
+
+  const [showModal, setShowModal] = useState(false);
+  const [supervisorInfo, setSupervisorInfo] = useState(null);
+
+  const handleClose = () => setShowModal(false);
+  const handleShowContact = async () => {
+    setShowModal(true);
+
+    const supervisorUid = event.createdByID?.uid;
+    console.log(supervisorUid);
+
+    if (supervisorUid) {
+      try {
+        const userDocRef = doc(database, "users", supervisorUid);
+        const userDocSnap = await getDoc(userDocRef);
+
+        if (userDocSnap.exists()) {
+          const userData = userDocSnap.data();
+          setSupervisorInfo({
+            phone: userData.phone ?? "No phone listed",
+            email: userData.email ?? event.createdByID.email ?? "No email listed",
+            name: userData.displayName ?? event.createdByID.displayName
+          });
+        } else {
+          console.warn("No such user document found in database!");
+        }
+      } catch (error) {
+        console.error("Error fetching supervisor details:", error);
+      }
+    }
+  };
 
   function timeFormat(time) {
     let hours = 0;
@@ -160,13 +201,25 @@ export default function EventCard({
               )}
 
               {(path === "/profile" || status === "MyJobs") && (
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => onCallBack(user.uid, event.id)}
-                >
-                  Drop
-                </Button>
+                <>
+                  {!tooLateToDrop ? (
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => onCallBack(user.uid, event.id)}
+                    >
+                      Drop
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="warning"
+                      size="sm"
+                      onClick={handleShowContact}
+                    >
+                      Contact Supervisor
+                    </Button>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -183,6 +236,29 @@ export default function EventCard({
           </Card.Footer>
         )}
       </Card>
+
+      <Modal show={showModal} onHide={handleClose} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Contact Supervisor</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>
+            It is too close to the start time to drop this shift. Please contact <strong> {supervisorInfo?.name}</strong> directly with questions.
+          </p>
+          <hr />
+          <div className="mt-3">
+            <h6><strong>Supervisor Details:</strong></h6>
+            <p className="mb-1"><strong>Name:</strong> {supervisorInfo?.name}</p>
+            <p className="mb-1"><strong>Email:</strong> {supervisorInfo?.email || "No email provided"}</p>
+            <p className="mb-0"><strong>Phone:</strong> {supervisorInfo?.phone || "No phone provided"}</p>
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleClose}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }
