@@ -11,6 +11,7 @@ import Col from "react-bootstrap/Col";
 import EventCard from "../components/event-card";
 import { GoogleAuthProvider, reauthenticateWithPopup } from "firebase/auth";
 import { auth } from "../firebase-config";
+import JobManagementModal from "../components/JobManagementModal";
 
 function Home({ user }) {
   const [events, setEvents] = useState([]);
@@ -48,6 +49,8 @@ function Home({ user }) {
   const [studentCap, setStudentCap] = useState(2);
   const [date, setDate] = useState("");
 
+  const [showManageModal, setShowManageModal] = useState(false);
+
   const [currentWeekStart, setCurrentWeekStart] = useState(
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
@@ -81,6 +84,22 @@ function Home({ user }) {
   const handlePrevWeek = () => setCurrentWeekStart(prev => subWeeks(prev, 1));
   const handleNextWeek = () => setCurrentWeekStart(prev => addWeeks(prev, 1));
   const handleToday = () => setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
+
+  const fetchEvents = async () => {
+    console.log("Fetching events");
+    const querySnapshot = await getDocs(collection(database, "upcoming_events"));
+    const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    setEvents(data);
+    setSelectedEvent(prev => {
+      if (!prev) return null;
+      const freshData = data.find(e => e.id === prev.id);
+      return freshData ? { ...freshData } : null;
+    });
+  };
+
+  useEffect(() => {
+    fetchEvents();
+  }, []);
 
   useEffect(() => {
     const loadEvents = async () => {
@@ -228,11 +247,36 @@ function Home({ user }) {
   };
 
   const handleApply = async (uid, eventId) => {
-    await updateDoc(doc(database, "upcoming_events", eventId), {
-      students: arrayUnion(uid),
-    });
-    setEvents(prev => prev.map(e => e.id === eventId ? { ...e, students: [...(e.students ?? []), uid] } : e));
-    setSelectedEvent(prev => prev?.id === eventId ? { ...prev, students: [...(prev.students ?? []), uid] } : prev);
+    try {
+      const eventRef = doc(database, "upcoming_events", eventId);
+
+      await updateDoc(eventRef, {
+        pending_students: arrayUnion(uid)
+      });
+
+      setEvents(prevEvents => prevEvents.map(event => {
+        if (event.id === eventId) {
+          return {
+            ...event,
+            pending_students: [...(event.pending_students || []), uid]
+          };
+        }
+        return event;
+      }));
+
+      setSelectedEvent(prev => {
+        if (!prev || prev.id !== eventId) return prev;
+        return {
+          ...prev,
+          pending_students: [...(prev.pending_students || []), uid]
+        };
+      });
+
+      alert("Application submitted! Pending admin approval.");
+    } catch (error) {
+      console.error("Error applying for job:", error);
+      alert("Failed to apply. Please try again.");
+    }
   };
 // event position logic
   const getEventPosition = (event) => {
@@ -372,6 +416,11 @@ function Home({ user }) {
 
   if (loading) return <p className="text-center mt-5">Loading ...</p>;
 
+  const handleOpenManage = (event) => {
+    setSelectedEvent(event);
+    setShowManageModal(true);
+  };
+
 // create event modal
   return (
     <div style={{ padding: "20px", height: "calc(100vh - 70px)", overflowY: "auto" }}>
@@ -436,6 +485,8 @@ function Home({ user }) {
                   status="Upcoming"
                   onCallBack={deleteEvent}
                   onEdit={handleEditEvent}
+                  onManage={handleOpenManage}
+                  onRefresh={fetchEvents}
                   onApply={() => handleApply(user.uid, selectedEvent.id)}
               />
               <div style={{ textAlign: "center", marginTop: 8 }}>
@@ -539,6 +590,13 @@ function Home({ user }) {
           })}
         </div>
       </Card>
+
+      <JobManagementModal
+          show={showManageModal}
+          onHide={() => setShowManageModal(false)}
+          event={selectedEvent}
+          onRefresh={fetchEvents}
+      />
     </div>
   );
 }

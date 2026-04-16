@@ -16,6 +16,7 @@ export default function EventCard({
   onEdit,
   user,
   onApply,
+  onManage,
   status,
   onConfirm,
 }) {
@@ -43,6 +44,10 @@ export default function EventCard({
 
   const [showModal, setShowModal] = useState(false);
   const [supervisorInfo, setSupervisorInfo] = useState(null);
+
+  const pendingCount = event.pending_students?.length || 0;
+  const isPending = event.pending_students?.includes(user?.uid);
+  const isAccepted = event.students?.includes(user?.uid);
 
   const handleClose = () => setShowModal(false);
   const handleShowContact = async () => {
@@ -166,6 +171,13 @@ export default function EventCard({
                       <>
                           <Button variant="outline-primary" size="sm" onClick={() => onEdit(event)}>Edit</Button>
                           <Button variant="danger" size="sm" onClick={() => onCallBack(event.id)}>Delete</Button>
+                          <Button
+                              variant={pendingCount > 0 ? "warning" : "outline-primary"}
+                              size="sm"
+                              onClick={() => onManage(event)}
+                          >
+                            {pendingCount > 0 ? `Approvals (${pendingCount})` : "View Students"}
+                          </Button>
                       </>
                   )}
 
@@ -184,20 +196,13 @@ export default function EventCard({
           {user?.role === "student" && (
             <div className="d-flex align-items-center gap-2 mt-2">
               {(path === "/home" || path === "/") && (
-                <Button
-                  variant={
-                    hasApplied ? "success" : isFull ? "secondary" : "primary"
-                  }
-                  size="sm"
-                  disabled={isFull || hasApplied}
-                  onClick={() => {
-                    if (!isFull && !hasApplied) {
-                      onApply(user.uid, event.id);
-                    }
-                  }}
-                >
-                  {isFull ? "Full" : hasApplied ? "Applied!" : "Apply Now"}
-                </Button>
+                  <Button
+                      variant={isAccepted ? "success" : isPending ? "warning" : "primary"}
+                      disabled={isAccepted || isPending || isFull}
+                      onClick={() => onApply(user.uid, event.id)}
+                  >
+                    {isAccepted ? "Accepted" : isPending ? "Pending Approval" : "Apply Now"}
+                  </Button>
               )}
 
               {(path === "/profile" || status === "MyJobs") && (

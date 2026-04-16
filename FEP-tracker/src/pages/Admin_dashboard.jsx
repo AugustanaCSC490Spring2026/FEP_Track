@@ -22,6 +22,7 @@ import Card from "react-bootstrap/Card";
 import Row from "react-bootstrap/Row";
 import Modal from "react-bootstrap/Modal";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
+import JobManagementModal from "../components/JobManagementModal";
 
 function Dashboard({ user }) {
   const [validated, setValidated] = useState(false);
@@ -51,6 +52,9 @@ function Dashboard({ user }) {
 
   const [currentTab, setCurrentTab] = useState("Upcoming");
 
+  const [showManageModal, setShowManageModal] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+
   const collectionMap = {
     Upcoming: "upcoming_events",
     "Pending Approval": "pending_events",
@@ -58,16 +62,29 @@ function Dashboard({ user }) {
   };
   const tabNames = Object.keys(collectionMap);
 
+  const fetchEvents = async () => {
+    console.log("Fetching events");
+    const querySnapshot = await getDocs(collection(database, "upcoming_events"));
+    const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    setEvents(data);
+    setSelectedEvent(prev => {
+      if (!prev) return null;
+      const freshData = data.find(e => e.id === prev.id);
+      return freshData ? { ...freshData } : null;
+    });
+  };
+
+  useEffect(() => {
+    fetchEvents();
+  }, []);
+
   // Load events
   useEffect(() => {
     const load = async () => {
-      setLoading(true); // Start loading when tab changes
+      setLoading(true);
 
-      // 1. DYNAMICALLY GET THE COLLECTION NAME
-      const collectionName = collectionMap[currentTab]; // Use the mapping defined above
+      const collectionName = collectionMap[currentTab];
 
-      // 2. QUERY THAT SPECIFIC COLLECTION
-      // Note: This requires an index on 'createdAt' (Descending) in Firestore for THIS collection.
       const q = query(
         collection(database, collectionName),
         orderBy("createdAt", "desc"),
@@ -78,7 +95,6 @@ function Dashboard({ user }) {
         const fetchedEvents = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
         setEvents(fetchedEvents);
       } catch (error) {
-        // It's good practice to add error handling here
         console.error(
           "Error fetching events from collection:",
           collectionName,
@@ -380,6 +396,11 @@ function Dashboard({ user }) {
     return <>{name}</>;
   };
 
+  const handleOpenManage = (event) => {
+    setSelectedEvent(event);
+    setShowManageModal(true);
+  };
+
   return (
     <div
       style={{
@@ -624,6 +645,8 @@ function Dashboard({ user }) {
                     status={currentTab} // Pass "Upcoming", "Pending Approval", or "Completed"
                     onConfirm={handleOpenConfirmModal}
                     onEdit={handleEditEvent}
+                    onManage={handleOpenManage}
+                    onRefresh={fetchEvents}
                     onCallBack={async (id) => {
                       const collectionName = collectionMap[currentTab];
                       await deleteDoc(doc(database, collectionName, id));
@@ -854,6 +877,13 @@ function Dashboard({ user }) {
           </Button>
         </Modal.Footer>
       </Modal>
+
+      <JobManagementModal
+          show={showManageModal}
+          onHide={() => setShowManageModal(false)}
+          event={selectedEvent}
+          onRefresh={fetchEvents}
+      />
     </div>
   );
 }
