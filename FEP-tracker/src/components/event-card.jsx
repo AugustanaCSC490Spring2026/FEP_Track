@@ -213,7 +213,7 @@ export default function EventCard({
                       size="sm"
                       onClick={() => onCallBack(user.uid, event.id)}
                     >
-                      Drop
+                      {status === "Pending" ? "Withdraw" : "Drop"}
                     </Button>
                   ) : (
                     <Button

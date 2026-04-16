@@ -11,30 +11,38 @@ import {
 } from "firebase/firestore"
 import EventCard from "../components/event-card";
 import TimeClockModal from "../components/timeClock";
-import { Row, Col, Container } from "react-bootstrap";
+import { Row, Col, Container, ButtonGroup, Button } from "react-bootstrap";
 function Dashboard({ user }) {
 
-  const [myCurrentJobs, setMyCurrentJobs] = useState([])
-  const [loading,       setLoading]       = useState(true)
+  const [myJobs, setMyJobs] = useState([])
+  const [pendingJobs, setPendingJobs] = useState([])
+  const [currentTab, setCurrentTab] = useState("Approved")
+  const [loading, setLoading] = useState(true)
   const [confirmDropId, setConfirmDropId] = useState(null)
 
   useEffect(() => {
     const load = async () => {
       try {
-        const jobsQuery = query(
-          collection(database, "upcoming_events"),
-          where("students", "array-contains", user.uid)
-        )
-        const jobsSnap = await getDocs(jobsQuery)
-        const jobs = jobsSnap.docs.map(d => ({ id: d.id, ...d.data() }))
-        setMyCurrentJobs(jobs)
+        setLoading(true)
+        const eventsRef = collection(database, "upcoming_events")
+
+        const approvedQuery = query(eventsRef, where("students", "array-contains", user.uid))
+        const approvedSnap = await getDocs(approvedQuery)
+        const approvedList = approvedSnap.docs.map(d => ({id: d.id, ...d.data()}))
+        setMyJobs(approvedList)
+
+        const pendingQuery = query(eventsRef, where("pending_students", "array-contains", user.uid))
+        const pendingSnap = await getDocs(pendingQuery)
+        const pendingList = pendingSnap.docs.map(d => ({id: d.id, ...d.data()}))
+        setPendingJobs(pendingList)
+
       } catch (e) {
         console.error("Error loading dashboard:", e)
       } finally {
         setLoading(false)
       }
     }
-    load()
+    if (user?.uid) load()
   }, [user.uid])
 
   const handleDrop = async (uid, jobId) => {
@@ -42,40 +50,45 @@ function Dashboard({ user }) {
   }
 
   const confirmDrop = async (jobId) => {
+    const isPending = pendingJobs.some(j => j.id === jobId);
+    const updateField = isPending ? "pending_students" : "students";
+
     await updateDoc(doc(database, "upcoming_events", jobId), {
-      students: arrayRemove(user.uid)
+      [updateField]: arrayRemove(user.uid)
     })
-    setMyCurrentJobs(prev => prev.filter(j => j.id !== jobId))
+
+    if (isPending) {
+      setPendingJobs(prev => prev.filter(j => j.id !== jobId))
+    } else {
+      setMyJobs(prev => prev.filter(j => j.id !== jobId))
+    }
     setConfirmDropId(null)
   }
 
-  const ConfirmDropModal = ({ job }) => (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", paddingTop: "100px", justifyContent: "center", zIndex: 9999 }}>
-      <div style={{ background: "#fff", borderRadius: "14px", padding: "28px 28px 24px", maxWidth: "360px", width: "90%", boxShadow: "0 8px 32px rgba(0,0,0,0.18)" }}>
-        <div style={{ fontSize: "20px", fontWeight: "700", marginBottom: "10px", color: "#1e293b" }}>Drop this job?</div>
-        <div style={{ fontSize: "14px", color: "#555", marginBottom: "6px" }}>
-          You're about to drop <strong>{job.title}</strong>.
-        </div>
-        <div style={{ fontSize: "13px", color: "#94a3b8", marginBottom: "24px" }}>
-          You'll no longer be scheduled for this job.
-        </div>
-        <div style={{ display: "flex", gap: "10px" }}>
-          <button
-            onClick={() => setConfirmDropId(null)}
-            style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", background: "#f8fafc", cursor: "pointer", fontSize: "14px", fontWeight: "600", color: "#374151" }}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => confirmDrop(job.id)}
-            style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "none", background: "#dc2626", cursor: "pointer", fontSize: "14px", fontWeight: "600", color: "#fff" }}
-          >
-            Drop Job
-          </button>
+  const ConfirmDropModal = ({job}) => {
+    const isPending = currentTab === "Pending";
+    return (
+      <div style={{position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", paddingTop: "100px", justifyContent: "center", zIndex: 9999}}>
+        <div style={{background: "#fff", borderRadius: "14px", padding: "28px 28px 24px", maxWidth: "360px", width: "90%", boxShadow: "0 8px 32px rgba(0,0,0,0.18)"}}>
+          <div style={{fontSize: "20px", fontWeight: "700", marginBottom: "10px", color: "#1e293b"}}>
+            {isPending ? "Withdraw Application?" : "Drop Job?"}
+          </div>
+          <div style={{fontSize: "14px", color: "#555", marginBottom: "6px"}}>
+            {isPending ? `Are you sure you want to withdraw your application for ${job.title}?` : `You're about to remove yourself from ${job.title}.`}
+          </div>
+          {currentTab === "Approved" && (
+              <div style={{ fontSize: "13px", color: "#94a3b8", marginBottom: "24px" }}>
+                You'll no longer be scheduled for this job.
+              </div>
+          )}
+          <div style={{display: "flex", gap: "10px"}}>
+            <button onClick={() => setConfirmDropId(null)} style={{flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", background: "#f8fafc", cursor: "pointer", fontSize: "14px", fontWeight: "600", color: "#374151"}}>Cancel</button>
+            <button onClick={() => confirmDrop(job.id)} style={{flex: 1, padding: "10px", borderRadius: "8px", border: "none", background: "#dc2626", cursor: "pointer", fontSize: "14px", fontWeight: "600", color: "#fff"}}>{isPending ? "Withdraw" : "Confirm Drop"}</button>
+          </div>
         </div>
       </div>
-    </div>
-  )
+    )
+  }
 
   if (loading) {
     return (
@@ -85,7 +98,9 @@ function Dashboard({ user }) {
     )
   }
 
-  const jobToDrop = myCurrentJobs.find(j => j.id === confirmDropId)
+  const jobToDrop = [...myJobs, ...pendingJobs].find(j => j.id === confirmDropId)
+
+  const displayedJobs = currentTab === "Approved" ? myJobs : pendingJobs;
 
   return (
     <div style={{ maxWidth: "1200px", margin: "auto", padding: "40px 20px", fontFamily: "sans-serif" }}>
@@ -106,7 +121,7 @@ function Dashboard({ user }) {
             </div>
 
             <div className="p-4 rounded shadow-sm mb-3" style={{ backgroundColor: "var(--color-bg-card)", border: "1px solid var(--color-bg-darker)" }}>
-              <TimeClockModal user={user} jobs={myCurrentJobs} />
+              <TimeClockModal user={user} jobs={myJobs} />
             </div>
           </div>
         </Col>
@@ -115,22 +130,41 @@ function Dashboard({ user }) {
         <Col lg={7} md={6} style={{ borderLeft: "1px solid #334155" }}>
           <h3 className="mb-4" style={{ color: "var(--color-primary-blue-light)", fontWeight: "700" }}>Current Jobs</h3>
           <div className="mb-4">
+            <ButtonGroup className="w-100">
+              <Button
+                  variant={currentTab === "Approved" ? "primary" : "outline-primary"}
+                  onClick={() => setCurrentTab("Approved")}
+              >
+                Approved ({myJobs.length})
+              </Button>
+              <Button
+                  variant={currentTab === "Pending" ? "primary" : "outline-primary"}
+                  onClick={() => setCurrentTab("Pending")}
+              >
+                Pending ({pendingJobs.length})
+              </Button>
+            </ButtonGroup>
+          </div>
+          <div className="mb-4">
             <small style={{ color: "var(--color-text-secondary)", fontSize: "0.9rem" }}>
-              Total Jobs Scheduled: <strong style={{ color: "var(--color-primary-blue-light)" }}>{myCurrentJobs.length}</strong>
+              {currentTab === "Approved" ? "Total Jobs Scheduled: " : "Total Jobs Pending Approval: "}
+              <strong style={{ color: "var(--color-primary-blue-light)" }}>
+                {currentTab === "Approved" ? myJobs.length : pendingJobs.length}
+              </strong>
             </small>
           </div>
-          {myCurrentJobs.length === 0 ? (
+          {displayedJobs.length === 0 ? (
               <div className="text-center py-5 rounded" style={{ backgroundColor: "var(--color-bg-card)", border: "1px solid var(--color-bg-darker)" }}>
                 <p style={{ color: "#888", margin: 0 }}>You are not signed up for any jobs yet.</p>
               </div>
           ) : (
               <div className="event-scroll-container">
-                {myCurrentJobs.map((job) => (
+                {displayedJobs.map((job) => (
                     <EventCard
                       key={job.id}
                       event={job}
                       user={user}
-                      status="MyJobs"
+                      status={currentTab === "Pending" ? "Pending" : "MyJobs"}
                       onCallBack={handleDrop}
                       onEdit={() => {}}
                     />
