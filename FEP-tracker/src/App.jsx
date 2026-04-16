@@ -14,7 +14,11 @@ const ProtectedRoute = ({ user, allowedRoles, children }) => {
   if (!user && !allowedRoles.includes("any")) {
     return <Navigate to="/unauthorized" />;
   }
-  if (user?.role === "pending" || user?.role === "unauthorized") {
+  if (
+    user?.role === "pending" ||
+    user?.role === "unauthorized" ||
+    user?.role === "suspended"
+  ) {
     return <Navigate to="/unauthorized" />;
   }
   if (allowedRoles[0] !== "any" && !allowedRoles.includes(user?.role)) {
@@ -26,20 +30,27 @@ const ProtectedRoute = ({ user, allowedRoles, children }) => {
 const routes = [
   { path: "/home",     component: Home,     roles: ["any"] },
   { path: "/profile",  component: Profile,  roles: ["any"] },
-]; //role check is starting to feel  redundant
+];
 
 function App() {
   const { user, loading } = useAuth();
+
   if (user?.role === "admin") {
     routes.push({ path: "/students", component: Students, roles: ["admin"] });
-  }//protects the students page from being added to the nav if the user is not staff but also protects the route itself from being accessed by non staff users
+  } // protects the students page from being added to the nav if the user is not admin
+
   if (loading) return <h2>Loading...</h2>;
-  routes
+
   return (
     <>
       <Navbar user={user} />
       <Routes>
-        <Route path="/" element={<Navigate to={user ? "/home" : "/profile"} />} />
+        <Route path="/" element={<Navigate to={
+  !user ? "/profile" :
+  user.role === "pending" || user.role === "suspended" || user.role === "unauthorized"
+    ? "/unauthorized"
+    : "/home"
+    } />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
         <Route path="/logout" element={<Logout />} />
         {routes.map(({ path, component: Component, roles }) => (

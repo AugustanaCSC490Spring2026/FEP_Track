@@ -27,8 +27,8 @@ function Students({ user }) {
   const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState({});
   const [search, setSearch] = useState("");
+  const [sortByRole, setSortByRole] = useState(false);
 
-  // Confirmation modal state
   const [confirmModal, setConfirmModal] = useState({
     show: false,
     student: null,
@@ -39,10 +39,11 @@ function Students({ user }) {
 
   const rolePill = (role) => {
     const styles = {
-      admin:   { background: "#fee2e2", color: "#991b1b" },
-      staff:   { background: "#dbeafe", color: "#1e40af" },
-      student: { background: "#dcfce7", color: "#166534" },
-      pending: { background: "#fef9c3", color: "#854d0e" },
+      admin:     { background: "#fee2e2", color: "#991b1b" },
+      staff:     { background: "#dbeafe", color: "#1e40af" },
+      student:   { background: "#dcfce7", color: "#166534" },
+      pending:   { background: "#fef9c3", color: "#854d0e" },
+      suspended: { background: "#f3e8ff", color: "#6b21a8" },
     };
     const s = styles[role] || styles.pending;
     const label = role.charAt(0).toUpperCase() + role.slice(1);
@@ -62,9 +63,10 @@ function Students({ user }) {
   };
 
   const getRoleStyle = (role) => {
-    if (role === "admin")   return { background: "#fee2e2", color: "#991b1b" };
-    if (role === "staff")   return { background: "#dbeafe", color: "#1e40af" };
-    if (role === "student") return { background: "#dcfce7", color: "#166534" };
+    if (role === "admin")     return { background: "#fee2e2", color: "#991b1b" };
+    if (role === "staff")     return { background: "#dbeafe", color: "#1e40af" };
+    if (role === "student")   return { background: "#dcfce7", color: "#166534" };
+    if (role === "suspended") return { background: "#f3e8ff", color: "#6b21a8" };
     return { background: "#fef9c3", color: "#854d0e" };
   };
 
@@ -122,9 +124,7 @@ function Students({ user }) {
     loadStudents();
   }, []);
 
-  // Called when the dropdown changes
   const handleRoleChange = async (student, newRole) => {
-    // Require confirmation before elevating to staff or admin
     if (newRole === "staff" || newRole === "admin") {
       setConfirmModal({ show: true, student, newRole });
       return;
@@ -132,7 +132,6 @@ function Students({ user }) {
     await applyRoleChange(student, newRole);
   };
 
-  // Actually commits the role change to Firestore and local state
   const applyRoleChange = async (student, newRole) => {
     await updateDoc(doc(database, "users", student.id), { role: newRole });
     setStudents(prev =>
@@ -167,10 +166,16 @@ function Students({ user }) {
     } catch (err) { console.error("Error deleting user:", err); }
   };
 
+  const roleOrder = { admin: 0, staff: 1, student: 2, pending: 3, suspended: 4 };
+
   const filtered = students.filter(s =>
     s.name?.toLowerCase().includes(search.toLowerCase()) ||
     s.email?.toLowerCase().includes(search.toLowerCase())
   );
+
+  const sorted = sortByRole
+    ? [...filtered].sort((a, b) => (roleOrder[a.role] ?? 5) - (roleOrder[b.role] ?? 5))
+    : filtered;
 
   if (loading) return <p className="text-center mt-4">Loading students...</p>;
 
@@ -247,6 +252,7 @@ function Students({ user }) {
                 <option value="student">Approved Student</option>
                 <option value="staff">Staff</option>
                 <option value="admin">Admin</option>
+                <option value="suspended">Suspended</option>
               </Form.Select>
               <Button type="submit" variant="success">Create</Button>
               <Button variant="secondary" onClick={() => setShowForm(false)}>Cancel</Button>
@@ -281,24 +287,30 @@ function Students({ user }) {
           <thead>
             <tr>
               {["Name", "Email", "Role", "Notes", ""].map(h => (
-                <th key={h} style={{
-                  padding: "14px 16px",
-                  color: "white",
-                  fontWeight: 600,
-                  fontSize: 13,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.04em",
-                  whiteSpace: "nowrap",
-                  backgroundColor: "#0d6efd",
-                  borderBottom: "none"
-                }}>
-                  {h}
+                <th
+                  key={h}
+                  onClick={h === "Role" ? () => setSortByRole(prev => !prev) : undefined}
+                  style={{
+                    padding: "14px 16px",
+                    color: "white",
+                    fontWeight: 600,
+                    fontSize: 13,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em",
+                    whiteSpace: "nowrap",
+                    backgroundColor: "#0d6efd",
+                    borderBottom: "none",
+                    cursor: h === "Role" ? "pointer" : "default",
+                    userSelect: "none",
+                  }}
+                >
+                  {h === "Role" ? `Role ${sortByRole ? "↑" : "↓"}` : h}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {filtered.map((student, i) => (
+            {sorted.map((student, i) => (
               <tr
                 key={student.id}
                 style={{ background: i % 2 === 0 ? "white" : "#f8fafc", transition: "background 0.15s" }}
@@ -341,6 +353,7 @@ function Students({ user }) {
                       <option value="student">Student</option>
                       <option value="staff">Staff</option>
                       <option value="admin">Admin</option>
+                      <option value="suspended">Suspended</option>
                     </Form.Select>
                   ) : rolePill(student.role)}
                 </td>
@@ -379,7 +392,7 @@ function Students({ user }) {
                 </td>
               </tr>
             ))}
-            {filtered.length === 0 && (
+            {sorted.length === 0 && (
               <tr>
                 <td colSpan={5} style={{ padding: 32, textAlign: "center", color: "#9ca3af" }}>
                   No users found
