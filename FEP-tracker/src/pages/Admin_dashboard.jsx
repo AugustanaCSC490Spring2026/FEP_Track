@@ -23,6 +23,7 @@ import Row from "react-bootstrap/Row";
 import Modal from "react-bootstrap/Modal";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import JobManagementModal from "../components/JobManagementModal";
+import Select from 'react-select';
 
 function Dashboard({ user }) {
   const [validated, setValidated] = useState(false);
@@ -54,6 +55,8 @@ function Dashboard({ user }) {
 
   const [showManageModal, setShowManageModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [departmentList, setDepartmentList] = useState([]);
+  const [selectedDept, setSelectedDept] = useState(null);
 
   const collectionMap = {
     Upcoming: "upcoming_events",
@@ -63,49 +66,37 @@ function Dashboard({ user }) {
   const tabNames = Object.keys(collectionMap);
 
   const fetchEvents = async () => {
-    console.log("Fetching events");
-    const querySnapshot = await getDocs(collection(database, "upcoming_events"));
-    const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    setEvents(data);
-    setSelectedEvent(prev => {
-      if (!prev) return null;
-      const freshData = data.find(e => e.id === prev.id);
-      return freshData ? { ...freshData } : null;
-    });
+    setLoading(true);
+    const collectionName = collectionMap[currentTab];
+    const q = query(
+        collection(database, collectionName),
+        orderBy("createdAt", "desc")
+    );
+
+    try {
+      const snap = await getDocs(q);
+      const fetchedEvents = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      setEvents(fetchedEvents);
+    } catch (error) {
+      console.error("Error fetching:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     fetchEvents();
-  }, []);
 
-  // Load events
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-
-      const collectionName = collectionMap[currentTab];
-
-      const q = query(
-        collection(database, collectionName),
-        orderBy("createdAt", "desc"),
-      );
-
-      try {
-        const snap = await getDocs(q);
-        const fetchedEvents = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-        setEvents(fetchedEvents);
-      } catch (error) {
-        console.error(
-          "Error fetching events from collection:",
-          collectionName,
-          error,
-        );
-      } finally {
-        setLoading(false);
-      }
+    const fetchDepartments = async () => {
+      const querySnapshot = await getDocs(collection(database, "department_titles"));
+      const depts = querySnapshot.docs.map(doc => ({
+        value: doc.data().title,
+        label: doc.data().title
+      }));
+      setDepartmentList(depts.sort((a, b) => a.label.localeCompare(b.label)));
     };
-    load();
-  }, [user.uid, currentTab]);
+    fetchDepartments();
+  }, [currentTab]);
 
   const resetForm = () => {
     setTitle("");
@@ -113,6 +104,7 @@ function Dashboard({ user }) {
     setEndTime("");
     setSupervisor("");
     setLocation("");
+    setSelectedDept(null);
     setExtraInfo("");
     setStudentCap(1);
     setDate("");
@@ -122,7 +114,7 @@ function Dashboard({ user }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const form = e.currentTarget;
-    if (!form.checkValidity()) {
+    if (!form.checkValidity() || !selectedDept) {
       e.stopPropagation();
       setValidated(true);
 
@@ -138,47 +130,27 @@ function Dashboard({ user }) {
       createdBy: user.displayName,
       createdByID: user,
       location: location || "TBD",
+      department: selectedDept.value,
       student_cap: studentCap,
       date: date || "TBD",
       students,
       createdAt: new Date(),
     };
 
-    if (editingEvent) {
-      await updateDoc(
-        doc(database, "upcoming_events", editingEvent.id),
-        eventData,
-      );
+    try {
+      if (editingEvent) {
+        await updateDoc(doc(database, "upcoming_events", editingEvent.id), eventData);
+      } else {
+        await addDoc(collection(database, "upcoming_events"), eventData);
+      }
 
-      setEvents((prev) =>
-        prev.map((ev) =>
-          ev.id === editingEvent.id ? { ...ev, ...eventData } : ev,
-        ),
-      );
-    } else {
-      const newDoc = await addDoc(
-        collection(database, "upcoming_events"),
-        eventData,
-      );
+      await fetchEvents();
 
-      setEvents((prev) => [
-        ...prev,
-        {
-          id: newDoc.id,
-          title,
-          startTime,
-          endTime,
-          time: `${startTime} – ${endTime}`,
-          supervisor: supervisor || "TBD",
-          createdByID: user,
-          extra_details: extraInfo || "TBD",
-          location: location || "TBD",
-          student_cap: studentCap,
-          date: date || "TBD",
-          createdAt: new Date(),
-          students: [],
-        },
-      ]);
+      resetForm();
+      setEditingEvent(null);
+      setShowForm(false);
+    } catch (err) {
+      console.error("Save failed", err);
     }
 
     resetForm();
@@ -187,8 +159,11 @@ function Dashboard({ user }) {
   };
 
   const deleteEvent = async (id) => {
-    await deleteDoc(doc(database, "upcoming_events", id));
-    setEvents((prev) => prev.filter((e) => e.id !== id));
+    if (window.confirm("Are you sure you want to delete this job?")) {
+      await deleteDoc(doc(database, "upcoming_events", id));
+      setEvents((prev) => prev.filter((e) => e.id !== id));
+      setSelectedEvent(null);
+    }
   };
 
   const handleEditEvent = (event) => {
@@ -202,6 +177,12 @@ function Dashboard({ user }) {
     setExtraInfo(event.extra_details);
     setStartTime(event.startTime);
     setEndTime(event.endTime);
+    if (event.department) {
+      setSelectedDept({ value: event.department, label: event.department });
+    } else {
+      setSelectedDept(null);
+    }
+
     setShowForm(true);
   };
 
@@ -647,11 +628,7 @@ function Dashboard({ user }) {
                     onEdit={handleEditEvent}
                     onManage={handleOpenManage}
                     onRefresh={fetchEvents}
-                    onCallBack={async (id) => {
-                      const collectionName = collectionMap[currentTab];
-                      await deleteDoc(doc(database, collectionName, id));
-                      setEvents((prev) => prev.filter((e) => e.id !== id));
-                    }}
+                    onCallBack={deleteEvent}
                     user={user}
                   />
                 ))
@@ -670,123 +647,78 @@ function Dashboard({ user }) {
         <Modal.Header closeButton>
           <Modal.Title>{editingEvent ? "Edit Event" : "New Event"}</Modal.Title>
         </Modal.Header>
-
         <Modal.Body>
-          <Card className="p-3 shadow-sm">
-            <Card.Title className="mb-3">New Event</Card.Title>
-            <Form noValidate validated={validated} onSubmit={handleSubmit}>
-              <Row className="mb-3">
-                <Form.Group as={Col} md="6" controlId="fTitle">
-                  <Form.Label>Job Title</Form.Label>
-                  <Form.Control
-                    required
-                    type="text"
-                    placeholder="Job Title"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                  />
-                  <Form.Control.Feedback>Looks good!</Form.Control.Feedback>
-                  <Form.Control.Feedback type="invalid">
-                    Required.
-                  </Form.Control.Feedback>
-                </Form.Group>
-                <Form.Group as={Col} md="3" controlId="fStartTime">
-                  <Form.Label>Start Time</Form.Label>
-                  <Form.Control
-                    required
-                    type="time"
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    Required.
-                  </Form.Control.Feedback>
-                </Form.Group>
-                <Form.Group as={Col} md="3" controlId="fEndTime">
-                  <Form.Label>End Time</Form.Label>
-                  <Form.Control
-                    required
-                    type="time"
-                    min={startTime}
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    Required.
-                  </Form.Control.Feedback>
-                </Form.Group>
-              </Row>
-              <Row className="mb-3">
-                <Form.Group as={Col} md="6" controlId="fSupervisor">
-                  <Form.Label>Supervisor</Form.Label>
-                  <Form.Control
-                    required
-                    type="text"
-                    placeholder="Supervisor"
-                    value={supervisor}
-                    onChange={(e) => setSupervisor(e.target.value)}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    Required.
-                  </Form.Control.Feedback>
-                </Form.Group>
-                <Form.Group as={Col} md="6" controlId="fLocation">
-                  <Form.Label>Location</Form.Label>
-                  <Form.Control
-                    required
-                    type="text"
-                    placeholder="Location"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    Required.
-                  </Form.Control.Feedback>
-                </Form.Group>
-                <Form.Group as={Col} md="6" controlId="fDate">
-                  <Form.Label>Date</Form.Label>
-                  <Form.Control
-                    required
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    Required.
-                  </Form.Control.Feedback>
-                </Form.Group>
-                <Form.Group as={Col} md="6" controlId="fCap">
-                  <Form.Label>Student Capacity</Form.Label>
-                  <Form.Control
-                    required
-                    type="number"
-                    min={1}
-                    placeholder="Student Capacity"
-                    value={studentCap}
-                    onChange={(e) => setStudentCap(e.target.value)}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    Required.
-                  </Form.Control.Feedback>
-                </Form.Group>
-              </Row>
-              <Row className="mb-3">
-                <Form.Group controlId="fExtra">
-                  <Form.Label>Extra Information</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={2}
-                    placeholder="Any extra details..."
-                    value={extraInfo}
-                    onChange={(e) => setExtraInfo(e.target.value)}
-                  />
-                </Form.Group>
-              </Row>
-              <Button type="submit" variant="success">
-                {editingEvent ? "Update Jop" : "Create Job"}
-              </Button>
-            </Form>
-          </Card>
+          <Form noValidate validated={validated} onSubmit={handleSubmit}>
+            <Row className="mb-3">
+              <Form.Group as={Col} md="6">
+                <Form.Label>Job Title</Form.Label>
+                <Form.Control required type="text" value={title} onChange={(e) => setTitle(e.target.value)} />
+              </Form.Group>
+              <Form.Group as={Col} md="3">
+                <Form.Label>Start Time</Form.Label>
+                <Form.Control required type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+              </Form.Group>
+              <Form.Group as={Col} md="3">
+                <Form.Label>End Time</Form.Label>
+                <Form.Control required type="time" min={startTime} value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+              </Form.Group>
+            </Row>
+            <Row className="mb-3">
+              <Form.Group as={Col} md="6">
+                <Form.Label>Supervisor</Form.Label>
+                <Form.Control required type="text" value={supervisor} onChange={(e) => setSupervisor(e.target.value)} />
+              </Form.Group>
+              <Form.Group as={Col} md="6">
+                <Form.Label>Location</Form.Label>
+                <Form.Control required type="text" value={location} onChange={(e) => setLocation(e.target.value)} />
+              </Form.Group>
+            </Row>
+            <Form.Group as={Col} md="12" className="mb-3">
+              <Form.Label>Department</Form.Label>
+              <Select
+                  options={departmentList}
+                  value={selectedDept}
+                  onChange={(selectedOption) => setSelectedDept(selectedOption)}
+                  placeholder="Select Department..."
+                  isSearchable={true}
+                  styles={{
+                    control: (base, state) => ({
+                      ...base,
+                      borderColor: (validated && !selectedDept)
+                          ? "#dc3545"
+                          : (validated && selectedDept)
+                              ? "#198754"
+                              : base.borderColor,
+                      boxShadow: state.isFocused
+                          ? (validated && selectedDept ? "0 0 0 0.25rem rgba(25, 135, 84, 0.25)" : base.boxShadow)
+                          : "none",
+                      '&:hover': {
+                        borderColor: (validated && !selectedDept)
+                            ? "#dc3545"
+                            : (validated && selectedDept)
+                                ? "#198754"
+                                : base.borderColor,
+                      }
+                    })
+                  }}
+              />
+            </Form.Group>
+            <Row className="mb-3">
+              <Form.Group as={Col} md="6">
+                <Form.Label>Date</Form.Label>
+                <Form.Control required type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+              </Form.Group>
+              <Form.Group as={Col} md="6">
+                <Form.Label>Student Capacity</Form.Label>
+                <Form.Control required type="number" min={1} value={studentCap} onChange={(e) => setStudentCap(e.target.value)} />
+              </Form.Group>
+            </Row>
+            <Form.Group className="mb-3">
+              <Form.Label>Extra Information</Form.Label>
+              <Form.Control as="textarea" rows={2} value={extraInfo} onChange={(e) => setExtraInfo(e.target.value)} />
+            </Form.Group>
+            <Button type="submit" variant="success">{editingEvent ? "Update Job" : "Create Job"}</Button>
+          </Form>
         </Modal.Body>
       </Modal>
 

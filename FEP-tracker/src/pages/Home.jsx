@@ -12,6 +12,7 @@ import EventCard from "../components/event-card";
 import { GoogleAuthProvider, reauthenticateWithPopup } from "firebase/auth";
 import { auth } from "../firebase-config";
 import JobManagementModal from "../components/JobManagementModal";
+import Select from 'react-select';
 
 function Home({ user }) {
   const [events, setEvents] = useState([]);
@@ -19,20 +20,6 @@ function Home({ user }) {
   const [showGoogleCalendar, setShowGoogleCalendar] = useState(false);
   const [prefLoaded, setPrefLoaded] = useState(false);
 
-  useEffect(() =>{
- 
-    const loadPref = async() =>{
-      if(!user?.uid) return;
-        const userRef = doc(database,"users",user.uid);
-        const snap = await getDoc(userRef);
-        if (snap.exists()){
-          const data = snap.data();
-          setShowGoogleCalendar(data.preferences?.showGoogleCalendar ?? false);
-        }
-      setPrefLoaded(true);
-    };
-    loadPref();
-  }, [user])
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState(null);
 
@@ -50,6 +37,8 @@ function Home({ user }) {
   const [date, setDate] = useState("");
 
   const [showManageModal, setShowManageModal] = useState(false);
+  const [departmentList, setDepartmentList] = useState([]);
+  const [selectedDept, setSelectedDept] = useState(null);
 
   const [currentWeekStart, setCurrentWeekStart] = useState(
     startOfWeek(new Date(), { weekStartsOn: 1 })
@@ -78,6 +67,7 @@ function Home({ user }) {
   const resetForm = () => {
     setTitle(""); setStartTime(""); setEndTime(""); setSupervisor("");
     setLocation(""); setExtraInfo(""); setStudentCap(1); setDate("");
+    setSelectedDept(null);
     setValidated(false);
   };
 
@@ -86,30 +76,39 @@ function Home({ user }) {
   const handleToday = () => setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
 
   const fetchEvents = async () => {
-    console.log("Fetching events");
-    const querySnapshot = await getDocs(collection(database, "upcoming_events"));
-    const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    setEvents(data);
-    setSelectedEvent(prev => {
-      if (!prev) return null;
-      const freshData = data.find(e => e.id === prev.id);
-      return freshData ? { ...freshData } : null;
-    });
+    setLoading(true);
+    try {
+      console.log("Fetching fresh events from Firestore...");
+      const querySnapshot = await getDocs(collection(database, "upcoming_events"));
+      const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      setEvents(data);
+
+      setSelectedEvent(prev => {
+        if (!prev) return null;
+        const freshData = data.find(e => e.id === prev.id);
+        return freshData ? { ...freshData } : null;
+      });
+    } catch (error) {
+      console.error("Error fetching events:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     fetchEvents();
-  }, []);
 
-  useEffect(() => {
-    const loadEvents = async () => {
-      const snap = await getDocs(collection(database, "upcoming_events"));
-      const data = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setEvents(data);
-      setLoading(false);
+    const fetchDepartments = async () => {
+      const querySnapshot = await getDocs(collection(database, "department_titles"));
+      const depts = querySnapshot.docs.map(doc => ({
+        value: doc.data().title,
+        label: doc.data().title
+      }));
+      setDepartmentList(depts.sort((a, b) => a.label.localeCompare(b.label)));
     };
-    loadEvents();
-  }, []);
+    fetchDepartments();
+  }, [currentWeekStart]);
 
   useEffect(() => {
     if (!showGoogleCalendar || !user) {
@@ -204,6 +203,12 @@ function Home({ user }) {
       setStartTime(start);
       setEndTime(end);
     }
+
+    if (event.department) {
+      setSelectedDept({ value: event.department, label: event.department });
+    } else {
+      setSelectedDept(null);
+    }
   
     setSelectedEvent(null); 
     setShowForm(true);      
@@ -211,7 +216,7 @@ function Home({ user }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const form = e.currentTarget;
-    if (!form.checkValidity()) {
+    if (!form.checkValidity() || !selectedDept) {
       e.stopPropagation();
       setValidated(true);
       return;
@@ -227,6 +232,7 @@ function Home({ user }) {
       createdBy: user?.displayName || "Admin",
       createdByID: user,
       location: location || "TBD",
+      department: selectedDept.value,
       student_cap: studentCap,
       date: date || "TBD",
       students: editingEvent ? editingEvent.students : [],
@@ -235,11 +241,11 @@ function Home({ user }) {
 
     if (editingEvent) {
       await updateDoc(doc(database, "upcoming_events", editingEvent.id), eventData);
-      setEvents(prev => prev.map(ev => ev.id === editingEvent.id ? { ...ev, ...eventData } : ev));
     } else {
-      const newDoc = await addDoc(collection(database, "upcoming_events"), eventData);
-      setEvents(prev => [...prev, { id: newDoc.id, ...eventData }]);
+      await addDoc(collection(database, "upcoming_events"), eventData);
     }
+
+    await fetchEvents();
 
     resetForm();
     setEditingEvent(null);
@@ -454,6 +460,36 @@ function Home({ user }) {
                 <Form.Control required type="text" value={location} onChange={(e) => setLocation(e.target.value)} />
               </Form.Group>
             </Row>
+            <Form.Group as={Col} md="12" className="mb-3">
+              <Form.Label>Department</Form.Label>
+              <Select
+                  options={departmentList}
+                  value={selectedDept}
+                  onChange={(selectedOption) => setSelectedDept(selectedOption)}
+                  placeholder="Select Department..."
+                  isSearchable={true}
+                  styles={{
+                    control: (base, state) => ({
+                      ...base,
+                      borderColor: (validated && !selectedDept)
+                          ? "#dc3545"
+                          : (validated && selectedDept)
+                              ? "#198754"
+                              : base.borderColor,
+                      boxShadow: state.isFocused
+                          ? (validated && selectedDept ? "0 0 0 0.25rem rgba(25, 135, 84, 0.25)" : base.boxShadow)
+                          : "none",
+                      '&:hover': {
+                        borderColor: (validated && !selectedDept)
+                            ? "#dc3545"
+                            : (validated && selectedDept)
+                                ? "#198754"
+                                : base.borderColor,
+                      }
+                    })
+                  }}
+              />
+            </Form.Group>
             <Row className="mb-3">
               <Form.Group as={Col} md="6">
                 <Form.Label>Date</Form.Label>
