@@ -9,6 +9,7 @@ import Unauthorized from "./pages/Unauthorized";
 import Navbar from "./components/nav";
 import useAuth from "./hooks/useAuth";
 import Students from './pages/students';
+import OAuthCallback from './hooks/OAuthCallback';
 
 const ProtectedRoute = ({ user, allowedRoles, children }) => {
   if (!user && !allowedRoles.includes("any")) {
@@ -53,6 +54,7 @@ function App() {
     } />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
         <Route path="/logout" element={<Logout />} />
+        <Route path="/oauth-callback" element={<OAuthCallback />} />
         {routes.map(({ path, component: Component, roles }) => (
           <Route
             key={path}

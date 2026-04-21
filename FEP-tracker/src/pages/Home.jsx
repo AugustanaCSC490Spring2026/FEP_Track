@@ -9,17 +9,31 @@ import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import EventCard from "../components/event-card";
-import { GoogleAuthProvider, reauthenticateWithPopup } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "../firebase-config";
 import JobManagementModal from "../components/JobManagementModal";
 import Select from 'react-select';
 
-function Home({ user }) {
+function Home({ user }) { 
   const [events, setEvents] = useState([]);
   const [googleEvents, setGoogleEvents] = useState([]);
   const [showGoogleCalendar, setShowGoogleCalendar] = useState(false);
   const [prefLoaded, setPrefLoaded] = useState(false);
 
+  useEffect(() =>{
+ 
+    const loadPref = async() =>{
+      if(!user?.uid) return;
+        const userRef = doc(database,"users",user.uid);
+        const snap = await getDoc(userRef);
+        if (snap.exists()){
+          const data = snap.data();
+          setShowGoogleCalendar(data.preferences?.showGoogleCalendar ?? false);
+        }
+      setPrefLoaded(true);
+    };
+    loadPref();
+  }, [user])
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState(null);
 
@@ -67,7 +81,7 @@ function Home({ user }) {
   const resetForm = () => {
     setTitle(""); setStartTime(""); setEndTime(""); setSupervisor("");
     setLocation(""); setExtraInfo(""); setStudentCap(1); setDate("");
-    setSelectedDept(null);
+        setSelectedDept(null);
     setValidated(false);
   };
 
@@ -75,7 +89,7 @@ function Home({ user }) {
   const handleNextWeek = () => setCurrentWeekStart(prev => addWeeks(prev, 1));
   const handleToday = () => setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
 
-  const fetchEvents = async () => {
+   const fetchEvents = async () => {
     setLoading(true);
     try {
       console.log("Fetching fresh events from Firestore...");
@@ -110,6 +124,49 @@ function Home({ user }) {
     fetchDepartments();
   }, [currentWeekStart]);
 
+const FUNCTIONS_BASE = "https://us-central1-fep-tracker.cloudfunctions.net";
+
+  const getValidAccessToken = async (uid) => {
+    const cachedToken = sessionStorage.getItem("google_access_token");
+    const cachedExpiry = sessionStorage.getItem("google_token_expiry");
+
+    if (cachedToken && cachedExpiry && Date.now() < Number(cachedExpiry) - 60_000) {
+      return cachedToken;
+    }
+
+    const res = await fetch(`${FUNCTIONS_BASE}/refreshGoogleToken`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ uid }),
+    });
+
+    if (!res.ok) {
+      await updateDoc(doc(database, "users", uid), {
+        googleCalendarConnected: false,
+        "preferences.showGoogleCalendar": false,
+      });
+      throw new Error("Failed to refresh token — please reconnect Google Calendar");
+    }
+
+    const { access_token, expires_in } = await res.json();
+    sessionStorage.setItem("google_access_token", access_token);
+    sessionStorage.setItem("google_token_expiry", Date.now() + expires_in * 1000);
+
+    return access_token;
+  };
+
+  const connectGoogleCalendar = () => {
+    const clientId = "330729366554-l1mthkkksop6r1iehp912l1hr500um42.apps.googleusercontent.com"; 
+    const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+    authUrl.searchParams.set("client_id", clientId);
+    authUrl.searchParams.set("redirect_uri", `${window.location.origin}/oauth-callback`);
+    authUrl.searchParams.set("response_type", "code");
+    authUrl.searchParams.set("scope", "https://www.googleapis.com/auth/calendar.events.readonly");
+    authUrl.searchParams.set("access_type", "offline");
+    authUrl.searchParams.set("prompt", "consent");
+
+    window.location.href = authUrl.toString();
+  };
   useEffect(() => {
     if (!showGoogleCalendar || !user) {
       setGoogleEvents([]);
@@ -117,25 +174,16 @@ function Home({ user }) {
     }
 
     const fetchGoogleCalendar = async () => {
-      let token = localStorage.getItem("google_access_token");
-
-      if (!token) {
-        try {
-          const provider = new GoogleAuthProvider();
-          provider.addScope('https://www.googleapis.com/auth/calendar.events.readonly');
-          
-          const result = await reauthenticateWithPopup(auth.currentUser, provider);
-          const credential = GoogleAuthProvider.credentialFromResult(result);
-          token = credential.accessToken;
-          
-          if (token) {
-            localStorage.setItem("google_access_token", token);
-          }
-        } catch (error) {
-          console.error("Token refresh failed:", error);
-          setShowGoogleCalendar(false);
-          return;
-        }
+      let token;
+      try {
+        token = await getValidAccessToken(user.uid);
+      } catch (err) {
+        console.error("Could not get access token:", err);
+        setShowGoogleCalendar(false);
+        await updateDoc(doc(database, "users", user.uid), {
+          "preferences.showGoogleCalendar": false,
+        });
+        return;
       }
 
       const timeMin = currentWeekStart.toISOString();
@@ -146,38 +194,36 @@ function Home({ user }) {
           `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        
+
         const data = await response.json();
-        
+
         if (data.error?.code === 401) {
-          console.warn("token expired, removing")
-          localStorage.removeItem("google_access_token");
-          setShowGoogleCalendar(false)
+          sessionStorage.removeItem("google_access_token");
+          sessionStorage.removeItem("google_token_expiry");
+          setShowGoogleCalendar(false);
           return;
         }
 
-        const formatted = (data.items || []).map(item => {
+        const formatted = (data.items || []).map((item) => {
           const start = new Date(item.start.dateTime || item.start.date);
           const end = new Date(item.end.dateTime || item.end.date);
-          
           return {
             id: item.id,
             title: item.summary,
             time: `${format(start, "HH:mm")} – ${format(end, "HH:mm")}`,
             date: format(start, "yyyy-MM-dd"),
             isGoogleEvent: true,
-            color: GOOGLE_COLORS[item.colorId] || DEFAULT_GOOGLE_COLOR
+            color: GOOGLE_COLORS[item.colorId] || DEFAULT_GOOGLE_COLOR,
           };
         });
 
         setGoogleEvents(formatted);
       } catch (err) {
-        console.error("Google Calendar fetch failed", err);
+        console.error("Google Calendar fetch failed:", err);
       }
     };
 
     fetchGoogleCalendar();
-    
   }, [currentWeekStart, user, showGoogleCalendar]);
 
   const deleteEvent = async (id) => {
@@ -204,7 +250,7 @@ function Home({ user }) {
       setEndTime(end);
     }
 
-    if (event.department) {
+        if (event.department) {
       setSelectedDept({ value: event.department, label: event.department });
     } else {
       setSelectedDept(null);
@@ -241,6 +287,7 @@ function Home({ user }) {
 
     if (editingEvent) {
       await updateDoc(doc(database, "upcoming_events", editingEvent.id), eventData);
+      setEvents(prev => prev.map(ev => ev.id === editingEvent.id ? { ...ev, ...eventData } : ev));
     } else {
       await addDoc(collection(database, "upcoming_events"), eventData);
     }
@@ -556,16 +603,24 @@ function Home({ user }) {
               id="google-calendar-toggle"
               label=" Show Google Calendar"
               checked={showGoogleCalendar}
-              onChange = {async () => {
-                const newValue = !showGoogleCalendar;
-                setShowGoogleCalendar(newValue);
+              onChange={async () => {
+                if (!showGoogleCalendar) {
+                  const userSnap = await getDoc(doc(database, "users", user.uid));
+                  const alreadyConnected = userSnap.data()?.googleCalendarConnected;
 
-                try{
-                  await updateDoc(doc(database,"users",user.uid),{
-                    "preferences.showGoogleCalendar": newValue
+                  if (alreadyConnected) {
+                    setShowGoogleCalendar(true);
+                    await updateDoc(doc(database, "users", user.uid), {
+                      "preferences.showGoogleCalendar": true,
+                    });
+                  } else {
+                    await connectGoogleCalendar();
+                  }
+                  } else {
+                  setShowGoogleCalendar(false);
+                  await updateDoc(doc(database, "users", user.uid), {
+                    "preferences.showGoogleCalendar": false,
                   });
-                }catch (err){
-                  console.error("Error saving preference", err);
                 }
               }}
               style={{ cursor: "pointer", marginBottom: 0, color: "#2563eb" }}
