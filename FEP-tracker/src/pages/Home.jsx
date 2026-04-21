@@ -65,7 +65,7 @@ function Home({ user }) {
   const DEFAULT_GOOGLE_COLOR = "#46d6db"; // Fallback gray
 
   const resetForm = () => {
-    setTitle(""); setStartTime(""); setEndTime(""); setSupervisor("");
+    setTitle(""); setStartTime(""); setEndTime(""); setSupervisor(user.displayName);
     setLocation(""); setExtraInfo(""); setStudentCap(1); setDate("");
     setSelectedDept(null);
     setValidated(false);
@@ -227,7 +227,7 @@ function Home({ user }) {
       startTime,
       endTime,
       time: `${startTime} – ${endTime}`,
-      supervisor: supervisor || "TBD",
+      supervisor: supervisor || user.displayName,
       extra_details: extraInfo || "TBD",
       createdBy: user?.displayName || "Admin",
       createdByID: user,

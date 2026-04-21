@@ -102,7 +102,7 @@ function Dashboard({ user }) {
     setTitle("");
     setStartTime("");
     setEndTime("");
-    setSupervisor("");
+    setSupervisor(user.displayName);
     setLocation("");
     setSelectedDept(null);
     setExtraInfo("");
@@ -125,7 +125,7 @@ function Dashboard({ user }) {
       startTime,
       endTime,
       time: `${startTime} – ${endTime}`,
-      supervisor: supervisor || "TBD",
+      supervisor: supervisor || user.displayName,
       extra_details: extraInfo || "TBD",
       createdBy: user.displayName,
       createdByID: user,

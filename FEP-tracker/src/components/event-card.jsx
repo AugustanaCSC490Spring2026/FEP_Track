@@ -91,7 +91,7 @@ export default function EventCard({
     return `${((hours + 11) % 12) + 1}:${minutes.toString().padStart(2, '0')} ${ampm}`;
   }
   return (
-    <div style={{ maxWidth: 400, margin: "auto", padding: "0 16px" }}>
+    <div style={{ maxWidth: 500, margin: "auto", padding: "0 16px" }}>
       <Card
         className="mb-3 shadow-sm overflow-hidden"
         style={{
@@ -132,7 +132,24 @@ export default function EventCard({
             {event.title}
           </Card.Title>
           <Row className="mb-2">
-            <Col xs="auto">
+            <Card.Text className="text-muted mb-1" style={{ fontSize: 13 }}>
+              <strong>Department:</strong> {event.department}
+            </Card.Text>
+          </Row>
+          <Row className="mb-2">
+            <Col>
+              <Card.Text className="text-muted mb-1" style={{ fontSize: 13 }}>
+                <strong>Supervisor:</strong> {event.supervisor}
+              </Card.Text>
+            </Col>
+            <Col>
+              <Card.Text className="text-muted mb-1" style={{ fontSize: 13 }}>
+                <strong>Location:</strong> {event.location}
+              </Card.Text>
+            </Col>
+          </Row>
+          <Row className="mb-2">
+            <Col>
               <Card.Text className="text-muted mb-3" style={{ fontSize: 13 }}>
                 <strong>Student Limit:</strong> {filled}/{event.student_cap}
                 &nbsp;·&nbsp;
@@ -140,7 +157,7 @@ export default function EventCard({
             </Col>
             <Col>
               <Card.Text className="text-muted mb-1" style={{ fontSize: 13 }}>
-                <strong>Supervisor:</strong> {event.supervisor}
+                <strong>Current Applicants:</strong> {pendingCount}
               </Card.Text>
             </Col>
           </Row>
