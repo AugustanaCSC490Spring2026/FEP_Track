@@ -169,7 +169,7 @@ function TimeClockModal({ user, jobs = [] }) {
           )}
 
           <button className="btn btn-primary w-100 mt-2" onClick={openModal}>
-            Clock In / Out
+            Clock {isClockedIn ? "Out" : "In"}
           </button>
         </div>
 
