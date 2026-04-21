@@ -206,7 +206,7 @@ function Dashboard({ user }) {
       (filterAvailability === "Full" && isFull) ||
       (filterAvailability === "Available" && !isFull);
 
-    const hasPending = event.pending_applications && event.pending_applications.length > 0;
+    const hasPending = event.pending_students && event.pending_students.length > 0;
     const matchesPending =
         filterPending === "All" ||
         (filterPending === "Has Pending" && hasPending) ||
@@ -217,7 +217,7 @@ function Dashboard({ user }) {
       matchesBuilding &&
       matchesSupervisor &&
       matchesAvailability &&
-      matchesAvailability &&
+      matchesDepartment &&
       matchesPending
     );
   });
