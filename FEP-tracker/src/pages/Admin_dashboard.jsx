@@ -46,6 +46,8 @@ function Dashboard({ user }) {
   const [filterBuilding, setFilterBuilding] = useState("All");
   const [filterSupervisor, setFilterSupervisor] = useState("All");
   const [filterAvailability, setFilterAvailability] = useState("All");
+  const [filterDepartment, setFilterDepartment] = useState("All");
+  const [filterPending, setFilterPending] = useState("All");
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmingEvent, setConfirmingEvent] = useState(null);
@@ -194,6 +196,8 @@ function Dashboard({ user }) {
       filterBuilding === "All" || event.location === filterBuilding;
     const matchesSupervisor =
       filterSupervisor === "All" || event.supervisor === filterSupervisor;
+    const matchesDepartment =
+        filterDepartment === "All" || event.department === filterDepartment;
     const studentCount = event.students?.length || 0;
     const isFull = studentCount >= event.student_cap;
 
@@ -202,11 +206,19 @@ function Dashboard({ user }) {
       (filterAvailability === "Full" && isFull) ||
       (filterAvailability === "Available" && !isFull);
 
+    const hasPending = event.pending_applications && event.pending_applications.length > 0;
+    const matchesPending =
+        filterPending === "All" ||
+        (filterPending === "Has Pending" && hasPending) ||
+        (filterPending === "No Pending" && !hasPending);
+
     return (
       matchesTitle &&
       matchesBuilding &&
       matchesSupervisor &&
-      matchesAvailability
+      matchesAvailability &&
+      matchesAvailability &&
+      matchesPending
     );
   });
 
@@ -440,7 +452,7 @@ function Dashboard({ user }) {
             >
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <small style={{ color: "var(--color-text-secondary)" }}>
-                  Active Jobs: <strong>{events.length}</strong>
+                  {currentTab} Jobs: <strong>{events.length}</strong>
                 </small>
                 <Button
                   variant="link"
@@ -455,6 +467,8 @@ function Dashboard({ user }) {
                     setFilterBuilding("All");
                     setFilterSupervisor("All");
                     setFilterAvailability("All");
+                    setFilterDepartment("All");
+                    setFilterPending("All");
                   }}
                 >
                   Reset
@@ -487,33 +501,35 @@ function Dashboard({ user }) {
                   />
                 </Form.Group>
 
-                {/* Building Filter */}
+                {/* Filter Department */}
                 <Form.Group className="mb-3">
                   <Form.Label
-                    className="small text-uppercase"
-                    style={{
-                      color: "var(--color-text-secondary)",
-                      fontSize: "0.7rem",
-                    }}
+                      className="small text-uppercase"
+                      style={{
+                        color: "var(--color-text-secondary)",
+                        fontSize: "0.7rem",
+                      }}
                   >
-                    Building
+                    Department
                   </Form.Label>
                   <Form.Select
-                    size="sm"
-                    value={filterBuilding}
-                    onChange={(e) => setFilterBuilding(e.target.value)}
-                    style={{
-                      backgroundColor: "var(--color-bg-card)",
-                      color: "white",
-                      border: "1px solid #475569",
-                    }}
+                      size="sm"
+                      value={filterDepartment}
+                      onChange={(e) => setFilterDepartment(e.target.value)}
+                      style={{
+                        backgroundColor: "var(--color-bg-card)",
+                        color: "white",
+                        border: "1px solid #475569",
+                      }}
                   >
-                    <option value="All">All Buildings</option>
-                    {[...new Set(events.map((e) => e.location))].map((loc) => (
-                      <option key={loc} value={loc}>
-                        {loc}
-                      </option>
-                    ))}
+                    <option value="All">All Departments</option>
+                    {[...new Set(events.map((e) => e.department).filter(Boolean))].map(
+                        (dept) => (
+                            <option key={dept} value={dept}>
+                              {dept}
+                            </option>
+                        ),
+                    )}
                   </Form.Select>
                 </Form.Group>
 
@@ -549,6 +565,36 @@ function Dashboard({ user }) {
                   </Form.Select>
                 </Form.Group>
 
+                {/* Building Filter */}
+                <Form.Group className="mb-3">
+                  <Form.Label
+                      className="small text-uppercase"
+                      style={{
+                        color: "var(--color-text-secondary)",
+                        fontSize: "0.7rem",
+                      }}
+                  >
+                    Location
+                  </Form.Label>
+                  <Form.Select
+                      size="sm"
+                      value={filterBuilding}
+                      onChange={(e) => setFilterBuilding(e.target.value)}
+                      style={{
+                        backgroundColor: "var(--color-bg-card)",
+                        color: "white",
+                        border: "1px solid #475569",
+                      }}
+                  >
+                    <option value="All">All Locations</option>
+                    {[...new Set(events.map((e) => e.location))].map((loc) => (
+                        <option key={loc} value={loc}>
+                          {loc}
+                        </option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+
                 {/* Availability Toggle */}
                 <Form.Group>
                   <Form.Label
@@ -575,6 +621,36 @@ function Dashboard({ user }) {
                       >
                         {status}
                       </Button>
+                    ))}
+                  </div>
+                </Form.Group>
+
+                {/* Pending Applications Toggle */}
+                <Form.Group className="mb-3">
+                  <Form.Label
+                      className="small text-uppercase"
+                      style={{
+                        color: "var(--color-text-secondary)",
+                        fontSize: "0.7rem",
+                      }}
+                  >
+                    Pending Applications
+                  </Form.Label>
+                  <div className="d-flex gap-2">
+                    {["All", "Has Pending", "No Pending"].map((status) => (
+                        <Button
+                            key={status}
+                            size="sm"
+                            variant={
+                              filterPending === status
+                                  ? "primary"
+                                  : "outline-secondary"
+                            }
+                            onClick={() => setFilterPending(status)}
+                            style={{ fontSize: "0.7rem", flex: 1 }}
+                        >
+                          {status}
+                        </Button>
                     ))}
                   </div>
                 </Form.Group>
