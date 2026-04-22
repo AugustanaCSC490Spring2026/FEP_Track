@@ -105,6 +105,12 @@ function Dashboard({ user }) {
       });
 
       setEvents(fetchedEvents);
+
+      setSelectedEvent((prev) => {
+        if (!prev) return null;
+        const freshData = fetchedEvents.find((e) => e.id === prev.id);
+        return freshData ? { ...freshData } : null;
+      });
     } catch (error) {
       console.error("Error fetching/sorting events:", error);
     } finally {
