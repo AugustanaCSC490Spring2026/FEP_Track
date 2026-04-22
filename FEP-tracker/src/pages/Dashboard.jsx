@@ -21,29 +21,48 @@ function Dashboard({ user }) {
   const [confirmDropId, setConfirmDropId] = useState(null)
 
   useEffect(() => {
+    const sortJobs = (list) => {
+      return list.sort((a, b) => {
+        if (!a.date || a.date === "TBD") return 1;
+        if (!b.date || b.date === "TBD") return -1;
+
+        const dateTimeA = new Date(`${a.date}T${a.startTime || "00:00"}`);
+        const dateTimeB = new Date(`${b.date}T${b.startTime || "00:00"}`);
+        const diff = dateTimeA - dateTimeB;
+
+        if (diff === 0) {
+          const endA = a.endTime || "00:00";
+          const endB = b.endTime || "00:00";
+          return endA.localeCompare(endB);
+        }
+
+        return diff;
+      });
+    };
+
     const load = async () => {
       try {
-        setLoading(true)
-        const eventsRef = collection(database, "upcoming_events")
+        setLoading(true);
+        const eventsRef = collection(database, "upcoming_events");
 
-        const approvedQuery = query(eventsRef, where("students", "array-contains", user.uid))
-        const approvedSnap = await getDocs(approvedQuery)
-        const approvedList = approvedSnap.docs.map(d => ({id: d.id, ...d.data()}))
-        setMyJobs(approvedList)
+        const approvedQuery = query(eventsRef, where("students", "array-contains", user.uid));
+        const approvedSnap = await getDocs(approvedQuery);
+        const approvedList = approvedSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setMyJobs(sortJobs(approvedList));
 
-        const pendingQuery = query(eventsRef, where("pending_students", "array-contains", user.uid))
-        const pendingSnap = await getDocs(pendingQuery)
-        const pendingList = pendingSnap.docs.map(d => ({id: d.id, ...d.data()}))
-        setPendingJobs(pendingList)
+        const pendingQuery = query(eventsRef, where("pending_students", "array-contains", user.uid));
+        const pendingSnap = await getDocs(pendingQuery);
+        const pendingList = pendingSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setPendingJobs(sortJobs(pendingList));
 
       } catch (e) {
-        console.error("Error loading dashboard:", e)
+        console.error("Error loading dashboard:", e);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
-    if (user?.uid) load()
-  }, [user.uid])
+    };
+    if (user?.uid) load();
+  }, [user.uid]);
 
   const handleDrop = async (uid, jobId) => {
     setConfirmDropId(jobId)

@@ -70,17 +70,43 @@ function Dashboard({ user }) {
   const fetchEvents = async () => {
     setLoading(true);
     const collectionName = collectionMap[currentTab];
-    const q = query(
-        collection(database, collectionName),
-        orderBy("createdAt", "desc")
-    );
+    const q = query(collection(database, collectionName));
 
     try {
       const snap = await getDocs(q);
-      const fetchedEvents = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      let fetchedEvents = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+      fetchedEvents.sort((a, b) => {
+        if (!a.date || a.date === "TBD") return 1;
+        if (!b.date || b.date === "TBD") return -1;
+
+        const dateTimeA = new Date(`${a.date}T${a.startTime || "00:00"}`);
+        const dateTimeB = new Date(`${b.date}T${b.startTime || "00:00"}`);
+        let diff = 0;
+
+        if (currentTab === "Upcoming") {
+          diff = dateTimeA - dateTimeB;
+        } else {
+          diff = dateTimeB - dateTimeA;
+        }
+
+        if (diff === 0) {
+          const endA = a.endTime || "00:00";
+          const endB = b.endTime || "00:00";
+
+          if (currentTab === "Upcoming") {
+            return endA.localeCompare(endB);
+          } else {
+            return endB.localeCompare(endA);
+          }
+        }
+
+        return diff;
+      });
+
       setEvents(fetchedEvents);
     } catch (error) {
-      console.error("Error fetching:", error);
+      console.error("Error fetching/sorting events:", error);
     } finally {
       setLoading(false);
     }
