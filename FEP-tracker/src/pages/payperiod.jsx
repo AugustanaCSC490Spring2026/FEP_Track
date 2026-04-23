@@ -679,7 +679,7 @@ export default function PayPeriod({ user }) {
         </Card>
       </div>
 
-      {user?.role === "staff" ? (
+      {(user?.role === "staff" || user?.role === "admin")? (
         <StaffModal
           show={showModal}
           onHide={() => setShowModal(false)}
