@@ -106,3 +106,32 @@ button:focus-visible {
   scrollbar-color: var(--color-primary-blue) var(--color-bg-darker);
 }
 
+.custom-tabs.nav-tabs {
+  border-bottom: 2px solid var(--color-primary-blue-light);
+  gap: 10px;
+  margin-bottom: 1.5rem;
+}
+
+.custom-tabs .nav-link {
+  color: var(--color-text-secondary);
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  font-weight: 600;
+}
+
+.custom-tabs .nav-link:hover {
+  border-color: var(--color-primary-blue-light);
+  color: var(--color-primary-blue-light);
+}
+
+.custom-tabs .nav-link.active {
+  background-color: var(--color-primary-blue-light);
+  color: var(--color-white);
+  border: 1px solid var(--color-primary-blue-light);
+  border-bottom: none;
+}
+
+.tab-content {
+  background-color: var(--color-bg-darker);
+  border-radius: 0 0 8px 8px;
+}

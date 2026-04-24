@@ -5,28 +5,28 @@ import {
   Person,
   Mortarboard,
   Calendar4Week,
+  FileEarmarkBarGraph,
 } from "react-bootstrap-icons";
 /* There is no need for a login seperate page it should be built on to the a profile page */
 
 const baseNavLinks = [
   { href: "/", label: "Home", icon: <House className="me-3" /> },
-  { href: "/profile", label: "Account", icon: <Person className="me-3" /> },
+  { href: "/profile", label: "Dashboard", icon: <Person className="me-3" /> },
   { href: "/payperiod", label: "Pay Periods", icon: <Calendar4Week className="me-3" /> },
   { href: "/logout", label: "Logout", icon: <BoxArrowInRight className="me-3" /> },
 ];
 
-const staffLink = {
-  href: "/students",
-  label: "Students",
-  icon: <Mortarboard className="me-3" />,
-};
+const staffLinks = [
+  { href: "/students", label: "Students", icon: <Mortarboard className="me-3" />},
+  { href: "/reports", label: "Reports", icon: <FileEarmarkBarGraph className="me-3" />}
+];
 
 export default function Navbar({ user }) {
   const [isOpen, setIsOpen] = useState(false);
   // if the user is staff add the staff link in the middle of the nav links otherwise just show the base links
   const navLinks =
     user?.role === "admin"
-      ? [...baseNavLinks.slice(0, 2), staffLink, ...baseNavLinks.slice(2)]
+      ? [...baseNavLinks.slice(0, 2), ...staffLinks, ...baseNavLinks.slice(2)]
       : baseNavLinks;
   return (
     <nav

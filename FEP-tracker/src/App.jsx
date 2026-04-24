@@ -11,6 +11,7 @@ import useAuth from "./hooks/useAuth";
 import Students from './pages/students';
 import OAuthCallback from './hooks/OAuthCallback';
 import PayPeriod from './pages/payperiod';
+import Reports from './pages/Reports';
 
 const ProtectedRoute = ({ user, allowedRoles, children }) => {
   if (!user && !allowedRoles.includes("any")) {
@@ -32,7 +33,8 @@ const ProtectedRoute = ({ user, allowedRoles, children }) => {
 const routes = [
   { path: "/home",     component: Home,     roles: ["any"] },
   { path: "/profile",  component: Profile,  roles: ["any"] },
- { path: "/payperiod", component: PayPeriod, roles: ["any"] },
+  { path: "/payperiod", component: PayPeriod, roles: ["any"] },
+  { path: "/reports",   component: Reports,   roles: ["admin", "staff"] },
 ];
 
 function App() {
