@@ -645,10 +645,9 @@ export default function PayPeriod({ user }) {
             {periods.map((p) => (
               <button
                 key={p.id}
-                className="d-flex align-items-center justify-content-between w-100 px-3 py-3 border-0 text-start"
+                className="d-flex align-items-center justify-content-between w-100 my-2 px-3 py-3 border-0 text-start"
                 style={{
-                  backgroundColor:
-                    selectedPeriod?.id === p.id ? "#eff6ff" : "transparent",
+                  backgroundColor:"#eff6ff",
                   borderBottom: "1px solid #e5e7eb",
                   cursor: "pointer",
                   transition: "background-color 0.15s ease",
