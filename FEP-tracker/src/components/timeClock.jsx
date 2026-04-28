@@ -19,6 +19,25 @@ function TimeClockModal({ user, jobs = [] }) {
       return [];
     }
   });
+  const getInitialBreakState = () => {
+    try {
+      const saved = localStorage.getItem(`timelog_${user?.uid}`);
+      if (!saved) return false;
+      const parsed = JSON.parse(saved, (key, val) =>
+        key === "time" ? new Date(val) : val,
+      );
+
+      const lastClock = [...parsed]
+        .reverse()
+        .find((e) => e.type === "IN" || e.type === "OUT");
+      return parsed.at(-1)?.type === "break-start" && lastClock?.type === "IN";
+    } catch {
+      return false;
+    }
+  };
+
+  const [onBreak, setOnBreak] = useState(getInitialBreakState);
+
   const [selectedJob, setSelected] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -27,7 +46,21 @@ function TimeClockModal({ user, jobs = [] }) {
     const t = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
+  const lastClockEntry = [...log]
+    .reverse()
+    .find((e) => e?.type === "IN" || e?.type === "OUT"); //since before even a break can start the user has to be clocked in we can just check for the last clock in entry to get the job info for the break entries
 
+  const toggleBreak = () => {
+    const type = onBreak ? "break-end" : "break-start";
+    const entry = {
+      time: new Date(),
+      type,
+      jobId: lastClockEntry.jobId,
+      jobTitle: lastClockEntry.jobTitle,
+    };
+    setOnBreak(!onBreak);
+    setLog((prev) => [...prev, entry]);
+  };
   // Persist log to localStorage
   useEffect(() => {
     try {
@@ -37,6 +70,23 @@ function TimeClockModal({ user, jobs = [] }) {
     }
   }, [log, user?.uid]);
 
+  const getTotalBreakSeconds = (entries) => {
+    let total = 0;
+    let breakStart = null;
+
+    for (const entry of entries) {
+      if (entry.type === "break-start") {
+        breakStart = entry.time;
+      } else if (entry.type === "break-end" && breakStart) {
+        total += new Date(entry.time) - new Date(breakStart);
+        breakStart = null;
+      }
+    }
+
+    if (breakStart) total += Date.now() - new Date(breakStart);
+
+    return total / 1000; // return in seconds
+  };
   const parseDate = (date) => {
     if (date?.toDate) return date.toDate();
     const [year, month, day] = date.split("-").map(Number);
@@ -68,7 +118,8 @@ function TimeClockModal({ user, jobs = [] }) {
     });
 
   const lastEntry = log[log.length - 1];
-  const isClockedIn = lastEntry?.type === "IN";
+
+  const isClockedIn = lastClockEntry?.type === "IN";
 
   const clockIn = useCallback(async () => {
     if (!selectedJob || loading) return;
@@ -102,20 +153,22 @@ function TimeClockModal({ user, jobs = [] }) {
   }, [selectedJob, loading, user]);
 
   const clockOut = useCallback(async () => {
-    if (!lastEntry || loading) return;
+    if (!lastClockEntry || loading) return;
     setError(null);
     setLoading(true);
+    const breakSeconds = getTotalBreakSeconds(log);
     try {
-      await updateDoc(doc(database, "upcoming_events", lastEntry.jobId), {
+      await updateDoc(doc(database, "upcoming_events", lastClockEntry.jobId), {
         [`attendance.${user.uid}.timeOut`]: new Date(),
+        [`attendance.${user.uid}.breakSeconds`]: breakSeconds,
       });
       setLog((prev) => [
         ...prev,
         {
           type: "OUT",
           time: new Date(),
-          jobId: lastEntry.jobId,
-          jobTitle: lastEntry.jobTitle,
+          jobId: lastClockEntry.jobId,
+          jobTitle: lastClockEntry.jobTitle,
         },
       ]);
       setOpen(false);
@@ -127,7 +180,7 @@ function TimeClockModal({ user, jobs = [] }) {
     } finally {
       setLoading(false);
     }
-  }, [lastEntry, loading, user]);
+  }, [lastClockEntry, loading, user, log]);
 
   const openModal = () => {
     setSelected(null);
@@ -171,41 +224,63 @@ function TimeClockModal({ user, jobs = [] }) {
           <button className="btn btn-primary w-100 mt-2" onClick={openModal}>
             Clock {isClockedIn ? "Out" : "In"}
           </button>
+          {isClockedIn && (
+            <button
+              className={`btn w-100 mt-2 ${onBreak ? "btn-warning" : "btn-outline-warning"}`}
+              onClick={toggleBreak}
+            >
+              {onBreak ? "⏸ End Break" : "⏸ Start Break"}
+            </button>
+          )}
         </div>
 
         {/* ── Log ── */}
         {log.length > 0 && (
-          <div className="card shadow-sm mt-4" style={{ maxWidth: 380, width: "100%" }}>
+          <div
+            className="card shadow-sm mt-4"
+            style={{ maxWidth: 380, width: "100%" }}
+          >
             <div className="card-header fw-semibold d-flex justify-content-between align-items-center">
               <span>Time Log</span>
               <small className="text-muted">{log.length} entries</small>
             </div>
 
             {/* Wrap the list in this scrollable div */}
-            <div style={{
-              maxHeight: "250px",
-              overflowY: "auto",
-              scrollbarWidth: "thin"
-            }}>
+            <div
+              style={{
+                maxHeight: "250px",
+                overflowY: "auto",
+                scrollbarWidth: "thin",
+              }}
+            >
               <ul className="list-group list-group-flush">
                 {[...log].reverse().map((e, i) => (
-                    <li
-                        key={i}
-                        className="list-group-item d-flex justify-content-between align-items-center"
-                        style={{ padding: "0.75rem 1rem" }}
-                    >
-                      <div className="d-flex align-items-center gap-2">
-                        <span className={`badge ${e.type === "IN" ? "bg-success" : "bg-danger"}`} style={{ minWidth: "45px" }}>
-                          {e.type}
-                        </span>
-                        <span className="small text-truncate" style={{ maxWidth: "150px" }}>
-                          {e.jobTitle}
-                        </span>
-                      </div>
-                      <span className="font-monospace small text-muted" style={{ fontVariantNumeric: "tabular-nums" }}>
-                        {fmt(e.time)}
+                  <li
+                    key={i}
+                    className="list-group-item d-flex justify-content-between align-items-center"
+                    style={{ padding: "0.75rem 1rem" }}
+                  >
+                    <div className="d-flex align-items-center gap-2">
+                      <span
+                        className={`badge ${e.type === "IN" ? "bg-success" : "bg-danger"}`}
+                        style={{ minWidth: "45px" }}
+                      >
+                        {e.type}
                       </span>
-                    </li>
+                      <span
+                        className="small text-truncate"
+                        style={{ maxWidth: "150px" }}
+                      >
+                        {e.jobTitle}
+                      </span>
+                    </div>
+                    <span
+                      className="font-monospace small text-muted"
+                      style={{ fontVariantNumeric: "tabular-nums" }}
+                    >
+                      {fmt(e.time)}
+                    </span>
+                  </li>
                 ))}
               </ul>
             </div>
@@ -260,9 +335,9 @@ function TimeClockModal({ user, jobs = [] }) {
                 className={`badge fs-6 d-block text-center mb-3 ${isClockedIn ? "bg-success" : "bg-secondary"}`}
               >
                 {isClockedIn
-                  ? `● Clocked In — ${lastEntry.jobTitle}`
+                  ? `● Clocked In — ${lastClockEntry.jobTitle}`
                   : "○ Currently Clocked Out"}{" "}
-                at {lastEntry ? fmt(lastEntry.time) : "N/A"}
+                at {lastClockEntry ? fmt(lastClockEntry.time) : "N/A"}
               </span>
 
               {/* Error alert */}
@@ -274,7 +349,15 @@ function TimeClockModal({ user, jobs = [] }) {
 
               {/* Clock Out path */}
               {isClockedIn ? (
-                <div className="d-grid">
+                <div className="d-grid gap-2">
+                  <button
+                    className={`btn btn-lg ${onBreak ? "btn-warning" : "btn-outline-warning"}`}
+                    onClick={toggleBreak}
+                    disabled={loading}
+                  >
+                    {onBreak ? "⏸ End Break" : "⏸ Start Break"}
+                  </button>
+
                   <button
                     className="btn btn-danger btn-lg"
                     onClick={clockOut}
@@ -290,7 +373,7 @@ function TimeClockModal({ user, jobs = [] }) {
                         Clocking Out…
                       </>
                     ) : (
-                      `Clock Out of ${lastEntry.jobTitle}`
+                      `Clock Out of ${lastClockEntry.jobTitle}`
                     )}
                   </button>
                 </div>
@@ -323,7 +406,7 @@ function TimeClockModal({ user, jobs = [] }) {
                               className={`small ${isSelected ? "text-white" : "text-muted"}`}
                             >
                               {new Date(job.date).toString().slice(0, 10)} at
-                              new {job.startTime}
+                               {job.startTime}
                             </span>
                           </button>
                         );
