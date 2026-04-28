@@ -227,15 +227,16 @@ function Reports({ user }) {
                     <Tab eventKey="departments" title="Per Department">
                         <Card className="shadow-sm mt-3" style={{ backgroundColor: "var(--color-bg-card)", borderColor: "var(--color-bg-darker)", borderRadius: "8px" }}>
                             <Card.Header className="d-flex justify-content-between align-items-center" style={{ backgroundColor: "transparent", borderBottom: "1px solid var(--color-bg-darker)" }}>
-                                <h6 className="mb-0" style={{ color: "var(--color-text-primary)" }}>Department Reports</h6>
+                                <h5 className="mb-0" style={{ color: "var(--color-text-primary)" }}>Department Reports</h5>
                                 <button className="btn btn-outline-success" onClick={() => onExportClick(deptGridRef, "Department_Report")} style={{ padding: "0.25rem 0.5rem", fontSize: "0.875rem" }}>
                                     Download CSV
                                 </button>
                             </Card.Header>
                             <Card.Body className="p-0">
-                                <div className="ag-theme-quartz-dark" style={{ height: "600px", width: "100%" }}>
+                                <div className="ag-theme-quartz" style={{ height: "600px", width: "100%" }}>
                                     <AgGridReact
                                         ref={deptGridRef}
+                                        theme="legacy"
                                         rowData={processedData.deptStats}
                                         columnDefs={deptColDefs}
                                         defaultColDef={defaultColDef}
@@ -251,15 +252,16 @@ function Reports({ user }) {
                     <Tab eventKey="students" title="Total Students">
                         <Card className="shadow-sm mt-3" style={{ backgroundColor: "var(--color-bg-card)", borderColor: "var(--color-bg-darker)", borderRadius: "8px" }}>
                             <Card.Header className="d-flex justify-content-between align-items-center" style={{ backgroundColor: "transparent", borderBottom: "1px solid var(--color-bg-darker)" }}>
-                                <h6 className="mb-0" style={{ color: "var(--color-text-primary)" }}>Student Reports</h6>
+                                <h5 className="mb-0" style={{ color: "var(--color-text-primary)" }}>Student Reports</h5>
                                 <button className="btn btn-outline-success" onClick={() => onExportClick(studentGridRef, "Student_Report")} style={{ padding: "0.25rem 0.5rem", fontSize: "0.875rem" }}>
                                     Download CSV
                                 </button>
                             </Card.Header>
                             <Card.Body className="p-0">
-                                <div className="ag-theme-quartz-dark" style={{ height: "600px", width: "100%" }}>
+                                <div className="ag-theme-quartz" style={{ height: "600px", width: "100%" }}>
                                     <AgGridReact
                                         ref={studentGridRef}
+                                        theme="legacy"
                                         rowData={processedData.studentStats}
                                         columnDefs={studentColDefs}
                                         defaultColDef={defaultColDef}
@@ -275,15 +277,16 @@ function Reports({ user }) {
                     <Tab eventKey="raw" title="Raw Work Logs">
                         <Card className="shadow-sm mt-3" style={{ backgroundColor: "var(--color-bg-card)", borderColor: "var(--color-bg-darker)", borderRadius: "8px" }}>
                             <Card.Header className="d-flex justify-content-between align-items-center" style={{ backgroundColor: "transparent", borderBottom: "1px solid var(--color-bg-darker)" }}>
-                                <h6 className="mb-0" style={{ color: "var(--color-text-primary)" }}>All Individual Shifts</h6>
+                                <h5 className="mb-0" style={{ color: "var(--color-text-primary)" }}>All Individual Shifts</h5>
                                 <button className="btn btn-outline-success" onClick={() => onExportClick(rawGridRef, "Raw_Work_Logs")} style={{ padding: "0.25rem 0.5rem", fontSize: "0.875rem" }}>
                                     Download CSV
                                 </button>
                             </Card.Header>
                             <Card.Body className="p-0">
-                                <div className="ag-theme-quartz-dark" style={{ height: "600px", width: "100%" }}>
+                                <div className="ag-theme-quartz" style={{ height: "600px", width: "100%" }}>
                                     <AgGridReact
                                         ref={rawGridRef}
+                                        theme="legacy"
                                         rowData={processedData.rawLogs}
                                         columnDefs={rawColDefs}
                                         defaultColDef={defaultColDef}
