@@ -14,7 +14,7 @@ import Table from "react-bootstrap/Table";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import Modal from "react-bootstrap/Modal";
-import { Trash } from "react-bootstrap-icons";
+import { Trash, PencilSquare } from "react-bootstrap-icons";
 
 function Students({ user }) {
   const [showToast, setShowToast] = useState(false);
@@ -23,8 +23,8 @@ function Students({ user }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("pending");
-  const [phone,setPhone] = useState("");
-  const [ID, setID] = useState("")
+  const [phone, setPhone] = useState("");
+  const [ID, setID] = useState("");
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState({});
@@ -36,6 +36,40 @@ function Students({ user }) {
     student: null,
     newRole: null,
   });
+
+  const [editModal, setEditModal] = useState({ show: false, student: null });
+  const [editForm, setEditForm] = useState({ name: "", email: "", phone: "", ID: "" });
+
+  const openEditModal = (student) => {
+    setEditForm({
+      name: student.name || "",
+      email: student.email || "",
+      phone: student.phone || "",
+      ID: student.ID || "",
+    });
+    setEditModal({ show: true, student });
+  };
+
+  const closeEditModal = () => setEditModal({ show: false, student: null });
+
+  const handleEditSave = async () => {
+    const { student } = editModal;
+    if (!editForm.email) return;
+    try {
+      await updateDoc(doc(database, "users", student.id), {
+        name: editForm.name,
+        email: editForm.email,
+        phone: editForm.phone,
+        ID: editForm.ID,
+      });
+      setStudents(prev =>
+        prev.map(s => s.id === student.id ? { ...s, ...editForm } : s)
+      );
+      closeEditModal();
+    } catch (err) {
+      console.error("Error updating user:", err);
+    }
+  };
 
   const fileInputRef = useRef(null);
 
@@ -79,7 +113,7 @@ function Students({ user }) {
     try {
       const docRef = await addDoc(collection(database, "users"), newUser);
       setStudents(prev => [...prev, { id: docRef.id, ...newUser }]);
-      setName(""); setID(""); setEmail(""); setPhone(""); setRole("pending"); setShowForm(false); 
+      setName(""); setID(""); setEmail(""); setPhone(""); setRole("pending"); setShowForm(false);
     } catch (err) { console.error("Error adding user:", err); }
   };
 
@@ -212,6 +246,55 @@ function Students({ user }) {
         </Modal.Footer>
       </Modal>
 
+      {/* Edit User Modal */}
+      <Modal show={editModal.show} onHide={closeEditModal} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Edit User</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>Name</Form.Label>
+              <Form.Control
+                type="text"
+                value={editForm.name}
+                onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>ID</Form.Label>
+              <Form.Control
+                type="text"
+                value={editForm.ID}
+                onChange={(e) => setEditForm(prev => ({ ...prev, ID: e.target.value }))}
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Email</Form.Label>
+              <Form.Control
+                type="email"
+                value={editForm.email}
+                onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
+                required
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Phone</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="(xxx)-xxx-xxxx"
+                value={editForm.phone}
+                onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+              />
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={closeEditModal}>Cancel</Button>
+          <Button variant="primary" onClick={handleEditSave}>Save Changes</Button>
+        </Modal.Footer>
+      </Modal>
+
       {/* Buttons */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <Button variant="primary" onClick={() => fileInputRef.current && fileInputRef.current.click()}>
@@ -242,8 +325,8 @@ function Students({ user }) {
                 required
               />
               <Form.Control
-                type="ID"
-                placeholder= "ID"
+                type="text"
+                placeholder="ID"
                 value={ID}
                 onChange={(e) => setID(e.target.value)}
                 required
@@ -254,9 +337,9 @@ function Students({ user }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-              />  
+              />
               <Form.Control
-                type="phone"
+                type="text"
                 placeholder="Phone (xxx)-xxx-xxxx"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
@@ -299,12 +382,19 @@ function Students({ user }) {
         />
       </div>
 
-      {/* Styled Table */}
-      <div style={{ borderRadius: 12, overflow: "auto", border: "1px solid #e5e7eb", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+      {/* Scrollable Table */}
+      <div style={{
+        borderRadius: 12,
+        overflow: "hidden",
+        border: "1px solid #e5e7eb",
+        boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+        maxHeight: "60vh",
+        overflowY: "auto",
+      }}>
         <Table className="mb-0" style={{ fontSize: 14, minWidth: 700 }}>
-          <thead>
+          <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
             <tr>
-              {["Name","ID", "Email / phone", "Role", "Notes", ""].map(h => (
+              {["Name", "ID", "Email / Phone", "Role", "Notes", ""].map(h => (
                 <th
                   key={h}
                   onClick={h === "Role" ? () => setSortByRole(prev => !prev) : undefined}
@@ -347,12 +437,10 @@ function Students({ user }) {
                     </div>
                     {student.name || "N/A"}
                   </div>
-                  </td>
+                </td>
                 <td style={{ padding: "12px 16px", color: "#64748b", fontWeight: 500, verticalAlign: "middle", whiteSpace: "nowrap" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    {student.ID || "N/A"}
-                  </div>
-                  </td>
+                  {student.ID || "N/A"}
+                </td>
                 <td style={{ padding: "12px 16px", color: "#64748b", verticalAlign: "middle" }}>
                   <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.3 }}>
                     <span>{student.email || "N/A"}</span>
@@ -361,7 +449,6 @@ function Students({ user }) {
                     </span>
                   </div>
                 </td>
-
                 <td style={{ padding: "12px 16px", verticalAlign: "middle" }}>
                   {user?.role === "admin" && student.id !== user?.uid ? (
                     <Form.Select
@@ -410,20 +497,29 @@ function Students({ user }) {
                     />
                   )}
                 </td>
-                <td style={{ padding: "12px 16px", verticalAlign: "middle" }}>
-                  {student.id !== user?.uid && (
-                    <Trash
+                <td style={{ padding: "12px 16px", verticalAlign: "middle", whiteSpace: "nowrap" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <PencilSquare
                       size={16}
-                      style={{ color: "#dc2626", cursor: "pointer" }}
-                      onClick={() => handleDelete(student)}
+                      style={{ color: "#0d6efd", cursor: "pointer" }}
+                      onClick={() => openEditModal(student)}
+                      title="Edit user"
                     />
-                  )}
+                    {student.id !== user?.uid && (
+                      <Trash
+                        size={16}
+                        style={{ color: "#dc2626", cursor: "pointer" }}
+                        onClick={() => handleDelete(student)}
+                        title="Delete user"
+                      />
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
             {sorted.length === 0 && (
               <tr>
-                <td colSpan={5} style={{ padding: 32, textAlign: "center", color: "#9ca3af" }}>
+                <td colSpan={6} style={{ padding: 32, textAlign: "center", color: "#9ca3af" }}>
                   No users found
                 </td>
               </tr>
