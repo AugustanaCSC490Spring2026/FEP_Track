@@ -347,6 +347,29 @@ const FUNCTIONS_BASE = "https://us-central1-fep-tracker.cloudfunctions.net";
     return { top: topPosition, height: height };
   };
 
+  const getEventColor = (event, user) => {
+    const blue = "#0d6efd";
+    const green = "#198754";
+    const yellow = "#ffc107";
+    const red = "#dc3545";
+
+    const isAdminOrStaff = user?.role === "admin" || user?.role === "staff";
+    const approvedStudents = event.students || [];
+    const pendingStudents = event.pending_students || [];
+    const isFull = approvedStudents.length >= event.student_cap;
+
+    if (isAdminOrStaff) {
+      if (pendingStudents.length > 0) return yellow;
+      if (isFull) return green;
+      return blue;
+    } else {
+      if (approvedStudents.includes(user?.uid)) return green;
+      if (pendingStudents.includes(user?.uid)) return yellow;
+      if (isFull) return red;
+      return blue;
+    }
+  };
+
   const renderEventsForDay = (day) => {
     const formattedDay = format(day, "yyyy-MM-dd");
 
@@ -373,6 +396,9 @@ const FUNCTIONS_BASE = "https://us-central1-fep-tracker.cloudfunctions.net";
 
       if (pos.top < 0 && (pos.top + pos.height) <= 0) return null;
 
+      const cardColor = getEventColor(event, user);
+      const textColor = cardColor === "#ffc107" ? "#000" : "white";
+
       return (
         <div
           key={event.id}
@@ -383,8 +409,8 @@ const FUNCTIONS_BASE = "https://us-central1-fep-tracker.cloudfunctions.net";
             width: `${width}%`,
             top: pos.top,
             height: pos.height,
-            background: "#0d6efd",
-            color: "white",
+            background: cardColor,
+            color: textColor,
             borderRadius: "4px",
             padding: "4px",
             fontSize: "11px",
