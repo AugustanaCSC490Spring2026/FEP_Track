@@ -14,6 +14,7 @@ import { auth } from "../firebase-config";
 import JobManagementModal from "../components/JobManagementModal";
 import Select from 'react-select';
 
+
 function Home({ user }) { 
   const [events, setEvents] = useState([]);
   const [googleEvents, setGoogleEvents] = useState([]);
@@ -161,7 +162,7 @@ const FUNCTIONS_BASE = "https://us-central1-fep-tracker.cloudfunctions.net";
     authUrl.searchParams.set("client_id", clientId);
     authUrl.searchParams.set("redirect_uri", `${window.location.origin}/oauth-callback`);
     authUrl.searchParams.set("response_type", "code");
-    authUrl.searchParams.set("scope", "https://www.googleapis.com/auth/calendar.events.readonly");
+    authUrl.searchParams.set("scope", "https://www.googleapis.com/auth/calendar.events");
     authUrl.searchParams.set("access_type", "offline");
     authUrl.searchParams.set("prompt", "consent");
 
@@ -274,7 +275,7 @@ const FUNCTIONS_BASE = "https://us-central1-fep-tracker.cloudfunctions.net";
       endTime,
       time: `${startTime} – ${endTime}`,
       supervisor: supervisor || user.displayName,
-      extra_details: extraInfo || "TBD",
+      extra_details: extraInfo || "None Provided",
       createdBy: user?.displayName || "Admin",
       createdByID: user,
       location: location || "TBD",
