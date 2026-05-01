@@ -50,25 +50,33 @@ function TimeClockModal({ user, jobs = [] }) {
     .reverse()
     .find((e) => e?.type === "IN" || e?.type === "OUT"); //since before even a break can start the user has to be clocked in we can just check for the last clock in entry to get the job info for the break entries
 
-  const toggleBreak = () => {
-    const type = onBreak ? "break-end" : "break-start";
+  const toggleBreak = useCallback(async () => {
+    const endingBreak = onBreak;
+    const type = endingBreak ? "break-end" : "break-start";
+    const now = new Date();
     const entry = {
-      time: new Date(),
+      time: now,
       type,
       jobId: lastClockEntry.jobId,
       jobTitle: lastClockEntry.jobTitle,
     };
-    setOnBreak(!onBreak);
-    setLog((prev) => [...prev, entry]);
-  };
-  // Persist log to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem(`timelog_${user?.uid}`, JSON.stringify(log));
-    } catch {
-      // localStorage quota exceeded or unavailable — fail silently
-    }
-  }, [log, user?.uid]);
+
+    
+    setOnBreak(!endingBreak);
+    setLog((prev) => {
+      const updated = [...prev, entry];
+
+      // When ending a break, persist the running total to Firestore
+      if (endingBreak && lastClockEntry?.jobId) {
+        const breakSeconds = getTotalBreakSeconds(updated);
+        updateDoc(doc(database, "upcoming_events", lastClockEntry.jobId), {
+          [`attendance.${user.uid}.breakSeconds`]: breakSeconds,
+        }).catch((err) => console.error("Failed to save break time:", err));
+      }
+
+      return updated;
+    });
+  }, [onBreak, lastClockEntry, user]);
 
   const getTotalBreakSeconds = (entries) => {
     let total = 0;
@@ -87,6 +95,7 @@ function TimeClockModal({ user, jobs = [] }) {
 
     return total / 1000; // return in seconds
   };
+
   const parseDate = (date) => {
     if (date?.toDate) return date.toDate();
     const [year, month, day] = date.split("-").map(Number);
@@ -156,11 +165,9 @@ function TimeClockModal({ user, jobs = [] }) {
     if (!lastClockEntry || loading) return;
     setError(null);
     setLoading(true);
-    const breakSeconds = getTotalBreakSeconds(log);
     try {
       await updateDoc(doc(database, "upcoming_events", lastClockEntry.jobId), {
-        [`attendance.${user.uid}.timeOut`]: new Date(),
-        [`attendance.${user.uid}.breakSeconds`]: breakSeconds,
+        [`attendance.${user.uid}.timeOut`]: new Date()
       });
       setLog((prev) => [
         ...prev,
@@ -180,7 +187,7 @@ function TimeClockModal({ user, jobs = [] }) {
     } finally {
       setLoading(false);
     }
-  }, [lastClockEntry, loading, user, log]);
+  }, [lastClockEntry, loading, user]);
 
   const openModal = () => {
     setSelected(null);
@@ -406,7 +413,7 @@ function TimeClockModal({ user, jobs = [] }) {
                               className={`small ${isSelected ? "text-white" : "text-muted"}`}
                             >
                               {new Date(job.date).toString().slice(0, 10)} at
-                               {job.startTime}
+                              {job.startTime}
                             </span>
                           </button>
                         );
