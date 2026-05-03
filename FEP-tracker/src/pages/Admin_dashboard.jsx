@@ -270,17 +270,17 @@ function Dashboard({ user }) {
 
       if (studentAttendance) {
         const studentTimeIn = formatFirebaseTime(studentAttendance.timeIn);
-        const studentTimeOut = formatFirebaseTime(studentAttendance.timeOut);
-        const timeDifference = calculateTimeDifference(
-          studentTimeIn,
-          studentTimeOut,
-        );
+        const studentTimeOut = studentAttendance.timeOut ? formatFirebaseTime(studentAttendance.timeOut) : "--:--:--";
+        const checkTimeOut =  studentTimeOut !== "--:--:--" ? studentTimeOut : event.endTime;
+        const timeDifference = calculateTimeDifference(studentTimeIn, checkTimeOut);
         const breakSeconds = studentAttendance.breakSeconds || 0;
         const breakMinsRounded = Math.round(breakSeconds / 60);
         const clockedInTotalMins = (timeDifference.hours * 60) + timeDifference.minutes;
         const totalWorkedMins = Math.max(0, clockedInTotalMins - breakMinsRounded);
         const finalHours = Math.floor(totalWorkedMins / 60);
         const finalMinutes = totalWorkedMins % 60;
+        
+        
 
         initializedStudents[studentId] = {
           id: studentId,

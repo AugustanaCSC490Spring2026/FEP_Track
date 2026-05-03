@@ -35,20 +35,27 @@ function TimeClockModal({ user, jobs = [] }) {
       return false;
     }
   };
+  const [lastClockEntry, setLastClockEntry] = useState(null);
+  const [isClockedIn, setIsClockedIn] = useState(false);
 
   const [onBreak, setOnBreak] = useState(getInitialBreakState);
 
   const [selectedJob, setSelected] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  useEffect(() => {
+    const last = [...log]
+      .reverse()
+      .find((e) => e?.type === "IN" || e?.type === "OUT");//since before even a break can start the user has to be clocked in we can just check for the last clock in entry to get the job info for the break entries
+    
 
+    setLastClockEntry(last ?? null);
+    setIsClockedIn(last?.type === "IN");
+  }, [log]);
   useEffect(() => {
     const t = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
-  const lastClockEntry = [...log]
-    .reverse()
-    .find((e) => e?.type === "IN" || e?.type === "OUT"); //since before even a break can start the user has to be clocked in we can just check for the last clock in entry to get the job info for the break entries
 
   const toggleBreak = useCallback(async () => {
     const endingBreak = onBreak;
@@ -57,8 +64,8 @@ function TimeClockModal({ user, jobs = [] }) {
     const entry = {
       time: now,
       type,
-      jobId: lastClockEntry.jobId,
-      jobTitle: lastClockEntry.jobTitle,
+      jobId: lastClockEntry?.jobId,
+      jobTitle: lastClockEntry?.jobTitle,
     };
 
     
@@ -106,6 +113,32 @@ function TimeClockModal({ user, jobs = [] }) {
     return parseDate(a.date) - parseDate(b.date);
   });
 
+  useEffect(() => {
+    if (
+      lastClockEntry?.type === "IN" ||
+      lastClockEntry?.type === "break-start"
+    ) {
+      const entryDate = new Date(lastClockEntry.time);
+      entryDate.setHours(0, 0, 0, 0);
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (entryDate < today) {
+        // Clock entry is from a previous calendar day, auto clock out at midnight
+        const autoClockOut = {
+          type: "OUT",
+          time: new Date(),
+          jobId: lastClockEntry.jobId,
+          jobTitle: lastClockEntry.jobTitle,
+        };
+
+        setLog((prev) => [...prev, autoClockOut]);
+        setLastClockEntry(autoClockOut); // update state properly
+      }
+    }
+  }, [lastClockEntry]); // re-run whenever lastClockEntry changes
+
   const upcomingJobs = sortedJobs.filter((job) => {
     const jobDate = parseDate(job.date);
     const userAttendance = job.attendance?.[user?.uid];
@@ -125,10 +158,6 @@ function TimeClockModal({ user, jobs = [] }) {
       month: "short",
       day: "numeric",
     });
-
-  const lastEntry = log[log.length - 1];
-
-  const isClockedIn = lastClockEntry?.type === "IN";
 
   const clockIn = useCallback(async () => {
     if (!selectedJob || loading) return;
@@ -222,10 +251,10 @@ function TimeClockModal({ user, jobs = [] }) {
             className={`badge mb-1 fs-6 ${isClockedIn ? "bg-success" : "bg-secondary"}`}
           >
             {isClockedIn ? "● Clocked In" : "○ Clocked Out"} at{" "}
-            {lastEntry ? fmt(lastEntry.time) : "N/A"}
+            {lastClockEntry ? fmt(lastClockEntry.time) : "N/A"}
           </span>
           {isClockedIn && (
-            <p className="text-muted small mb-2">{lastEntry.jobTitle}</p>
+            <p className="text-muted small mb-2">{lastClockEntry.jobTitle}</p>
           )}
 
           <button className="btn btn-primary w-100 mt-2" onClick={openModal}>
