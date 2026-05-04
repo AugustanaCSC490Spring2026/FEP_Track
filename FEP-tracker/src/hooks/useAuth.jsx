@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { auth, database } from "../firebase-config";
 import { doc, onSnapshot } from "firebase/firestore";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 
 export default function useAuth() {
   const [isRegistered, setIsRegistered] = useState(false);
@@ -16,11 +16,16 @@ export default function useAuth() {
         const userRef = doc(database, "users", currentUser.uid);
 
         // Listen for real-time changes to the user's Firestore document
-        unsubscribeSnapshot = onSnapshot(userRef, (userSnap) => {
-          const role = userSnap.exists() ? userSnap.data().role : null;
-          const exists = userSnap.exists();
+        unsubscribeSnapshot = onSnapshot(userRef, async (userSnap) => {
+          if (!userSnap.exists()) {
+            // Document was deleted — sign them out automatically
+            await signOut(auth);
+            return;
+          }
 
-          console.log("useAuth - Role:", role, "Exists:", exists);
+          const role = userSnap.data().role;
+
+          console.log("useAuth - Role:", role, "Exists:", true);
 
           setUser({
             uid: currentUser.uid,
@@ -29,7 +34,7 @@ export default function useAuth() {
             role: role,
           });
 
-          setIsRegistered(exists);
+          setIsRegistered(true);
           setLoading(false);
         });
       } else {

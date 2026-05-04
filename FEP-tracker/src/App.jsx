@@ -14,9 +14,12 @@ import PayPeriod from './pages/payperiod';
 import Reports from './pages/Reports';
 
 const ProtectedRoute = ({ user, allowedRoles, children }) => {
-  if (!user && !allowedRoles.includes("any")) {
-    return <Navigate to="/unauthorized" />;
+  // No user at all — send to login
+  if (!user) {
+    return <Navigate to="/profile" />;
   }
+
+  // Blocked roles — send to unauthorized
   if (
     user?.role === "pending" ||
     user?.role === "unauthorized" ||
@@ -24,16 +27,17 @@ const ProtectedRoute = ({ user, allowedRoles, children }) => {
   ) {
     return <Navigate to="/unauthorized" />;
   }
-  if (allowedRoles[0] !== "any" && !allowedRoles.includes(user?.role)) {
+
+  if (!allowedRoles.includes("any") && !allowedRoles.includes(user?.role)) {
     return <Navigate to="/unauthorized" />;
   }
+
   return children;
 };
 
 const routes = [
-  { path: "/home",     component: Home,     roles: ["any"] },
-  { path: "/profile",  component: Profile,  roles: ["any"] },
-  { path: "/payperiod", component: PayPeriod, roles: ["any"] },
+  { path: "/home",      component: Home,      roles: ["any"] },
+  { path: "/payperiod", component: PayPeriod, roles: ["admin", "student"] },
   { path: "/reports",   component: Reports,   roles: ["admin", "staff"] },
 ];
 
@@ -42,7 +46,7 @@ function App() {
 
   if (user?.role === "admin") {
     routes.push({ path: "/students", component: Students, roles: ["admin"] });
-  } // protects the students page from being added to the nav if the user is not admin
+  }
 
   if (loading) return <h2>Loading...</h2>;
 
@@ -50,9 +54,15 @@ function App() {
     <>
       <Navbar user={user} />
       <Routes>
-        <Route path="/" element={<Navigate to={ !user ? "/profile" : user.role === "pending" || user.role === "suspended" || user.role === "unauthorized" ? "/unauthorized" : "/home" } />} />
+        <Route path="/" element={<Navigate to={
+          !user ? "/profile" :
+          user.role === "pending" || user.role === "suspended" || user.role === "unauthorized"
+            ? "/unauthorized"
+            : "/home"
+        } />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
         <Route path="/logout" element={<Logout />} />
+        <Route path="/profile" element={<Profile user={user} />} />
         <Route path="/oauth-callback" element={<OAuthCallback />} />
         {routes.map(({ path, component: Component, roles }) => (
           <Route

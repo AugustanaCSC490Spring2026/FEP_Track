@@ -7,7 +7,7 @@ import {
   Calendar4Week,
   FileEarmarkBarGraph,
 } from "react-bootstrap-icons";
-/* There is no need for a login seperate page it should be built on to the a profile page */
+/* There is no need for a login seperate page it should be built on to the profile page */
 
 const baseNavLinks = [
   { href: "/", label: "Home", icon: <House className="me-3" /> },
@@ -27,6 +27,9 @@ export default function Navbar({ user }) {
   const navLinks =
     user?.role === "admin"
       ? [...baseNavLinks.slice(0, 2), ...staffLinks, ...baseNavLinks.slice(2)]
+    //Do we want staff to be able to see the pay period page? 
+      : user?.role === "staff"
+      ? baseNavLinks.filter(link => link.href !== "/payperiod")
       : baseNavLinks;
   return (
     <nav
