@@ -52,6 +52,7 @@ function Dashboard({ user }) {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmingEvent, setConfirmingEvent] = useState(null);
   const [confirmingStudents, setConfirmingStudents] = useState({});
+  const [selectedStudentDetails, setSelectedStudentDetails] = useState(null);
 
   const [currentTab, setCurrentTab] = useState("Upcoming");
 
@@ -269,19 +270,26 @@ function Dashboard({ user }) {
 
       if (studentAttendance) {
         const studentTimeIn = formatFirebaseTime(studentAttendance.timeIn);
-        const studentTimeOut = formatFirebaseTime(studentAttendance.timeOut);
-        const timeDifference = calculateTimeDifference(
-          studentTimeIn,
-          studentTimeOut,
-        );
+        const studentTimeOut = studentAttendance.timeOut ? formatFirebaseTime(studentAttendance.timeOut) : "--:--:--";
+        const checkTimeOut =  studentTimeOut !== "--:--:--" ? studentTimeOut : event.endTime;
+        const timeDifference = calculateTimeDifference(studentTimeIn, checkTimeOut);
+        const breakSeconds = studentAttendance.breakSeconds || 0;
+        const breakMinsRounded = Math.round(breakSeconds / 60);
+        const clockedInTotalMins = (timeDifference.hours * 60) + timeDifference.minutes;
+        const totalWorkedMins = Math.max(0, clockedInTotalMins - breakMinsRounded);
+        const finalHours = Math.floor(totalWorkedMins / 60);
+        const finalMinutes = totalWorkedMins % 60;
+        
+        
 
         initializedStudents[studentId] = {
           id: studentId,
-          hours: timeDifference.hours ?? defaultTime.hours,
-          minutes: timeDifference.minutes ?? defaultTime.minutes,
+          hours: finalHours,
+          minutes: finalMinutes,
           status: "Present",
           timeIn: studentTimeIn,
           timeOut: studentTimeOut,
+          breakTime: breakSeconds,
         };
       } else {
         initializedStudents[studentId] = {
@@ -291,6 +299,7 @@ function Dashboard({ user }) {
           status: "No Record",
           timeIn: "--:--:--",
           timeOut: "--:--:--",
+          breakTime: 0,
         };
       }
     });
@@ -331,6 +340,7 @@ function Dashboard({ user }) {
       setEvents((prev) => prev.filter((e) => e.id !== confirmingEvent.id));
 
       setShowConfirmModal(false);
+      setSelectedStudentDetails(null);
       setConfirmingEvent(null);
       alert("Job confirmed and moved to Completed!");
     } catch (error) {
@@ -391,6 +401,15 @@ function Dashboard({ user }) {
     }
     return `${((hours + 11) % 12) + 1}:${minutes.toString().padStart(2, "0")} ${ampm}`;
   }
+
+  const formatTo12Hr = (timeStr) => {
+    if (!timeStr || timeStr === "--:--:--") return timeStr;
+    const [h, m, s] = timeStr.split(":");
+    const hour = parseInt(h, 10);
+    const ampm = hour >= 12 ? "PM" : "AM";
+    const displayHour = ((hour + 11) % 12) + 1;
+    return `${displayHour}:${m}:${s} ${ampm}`;
+  };
 
   const StudentName = ({ studentId, db }) => {
     const [name, setName] = useState("Loading...");
@@ -832,7 +851,10 @@ function Dashboard({ user }) {
 
       <Modal
         show={showConfirmModal}
-        onHide={() => setShowConfirmModal(false)}
+        onHide={() =>{
+          setShowConfirmModal(false);
+          setSelectedStudentDetails(null);
+      }}
         centered
       >
         <Modal.Header closeButton>
@@ -898,6 +920,14 @@ function Dashboard({ user }) {
                         style={{ maxWidth: "80px" }}
                       />
                       <span className="text-muted small">mins</span>
+                      <Button
+                          variant="outline-secondary"
+                          size="sm"
+                          className="ms-3"
+                          onClick={() => setSelectedStudentDetails(student.id)}
+                      >
+                        Details
+                      </Button>
                     </div>
                   </Form.Group>
                 ))
@@ -907,15 +937,71 @@ function Dashboard({ user }) {
         </Modal.Body>
         <Modal.Footer>
           <Button
-            variant="secondary"
-            onClick={() => setShowConfirmModal(false)}
+            variant="danger"
+            onClick={() => {
+              setShowConfirmModal(false);
+              setSelectedStudentDetails(null);
+            }}
           >
-            Cancel
+            Close
           </Button>
           <Button variant="success" onClick={executeConfirmJob}>
             Confirm & Complete Job
           </Button>
         </Modal.Footer>
+
+        {/* Shift Details Side Pop-up */}
+        {selectedStudentDetails && confirmingStudents[selectedStudentDetails] && (() => {
+          const student = confirmingStudents[selectedStudentDetails];
+
+          const clockedInDiff = calculateTimeDifference(student.timeIn, student.timeOut);
+          const clockedInTotalMins = (clockedInDiff.hours * 60) + clockedInDiff.minutes;
+
+          const breakSecs = student.breakTime || 0;
+          const totalBreakSeconds = Math.round(breakSecs);
+          const displayBreakMins = Math.floor(totalBreakSeconds / 60);
+          const displayBreakSecs = totalBreakSeconds % 60;
+
+          return (
+              <div
+                  style={{
+                    position: "fixed",
+                    top: "50%",
+                    left: "calc(50% + 265px)",
+                    transform: "translateY(-50%)",
+                    zIndex: 1060,
+                    width: "280px",
+                  }}
+              >
+                <Card className="shadow-lg border-info">
+                  <Card.Header className="bg-secondary text-white d-flex flex-column justify-content-between">
+                    <div className="d-flex justify-content-between align-items-center w-100">
+                      <strong>Shift Details</strong>
+                      <Button
+                          variant="close"
+                          className="btn-close-white"
+                          onClick={() => setSelectedStudentDetails(null)}
+                      />
+                    </div>
+                    <div style={{ fontSize: "1rem", opacity: 0.8, marginTop: "2px" }}>
+                      <StudentName studentId={student.id} db={database} />
+                    </div>
+                  </Card.Header>
+                  <Card.Body style={{ fontSize: "0.9rem" }}>
+                    <p className="mb-1"><strong>Time In:</strong> {formatTo12Hr(student.timeIn)}</p>
+                    <p className="mb-1"><strong>Time Out:</strong> {formatTo12Hr(student.timeOut)}</p>
+                    <hr className="my-2" />
+                    <p className="mb-1"><strong>Total Clocked In:</strong> {clockedInDiff.hours}h {clockedInDiff.minutes}m</p>
+                    <p className="mb-1"><strong>Break Taken:</strong> {displayBreakMins}m {displayBreakSecs}s</p>
+                    <hr className="my-2" />
+                    <p className="mb-0 text-success">
+                      <strong>Total Worked:</strong> {student.hours}h {student.minutes}m
+                    </p>
+                  </Card.Body>
+                </Card>
+              </div>
+          );
+        })()}
       </Modal>
 
       <JobManagementModal

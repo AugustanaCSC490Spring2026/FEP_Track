@@ -135,3 +135,17 @@ button:focus-visible {
   background-color: var(--color-bg-darker);
   border-radius: 0 0 8px 8px;
 }
+
+input[type="number"] {
+  -moz-appearance: number-input;
+  appearance: auto;
+  color-scheme: light;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: inner-spin-button;
+  appearance: inner-spin-button;
+  opacity: 1;
+  display: block;
+}

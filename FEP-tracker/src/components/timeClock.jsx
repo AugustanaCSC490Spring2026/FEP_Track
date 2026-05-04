@@ -35,40 +35,55 @@ function TimeClockModal({ user, jobs = [] }) {
       return false;
     }
   };
+  const [lastClockEntry, setLastClockEntry] = useState(null);
+  const [isClockedIn, setIsClockedIn] = useState(false);
 
   const [onBreak, setOnBreak] = useState(getInitialBreakState);
 
   const [selectedJob, setSelected] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  useEffect(() => {
+    const last = [...log]
+      .reverse()
+      .find((e) => e?.type === "IN" || e?.type === "OUT");//since before even a break can start the user has to be clocked in we can just check for the last clock in entry to get the job info for the break entries
+    
 
+    setLastClockEntry(last ?? null);
+    setIsClockedIn(last?.type === "IN");
+  }, [log]);
   useEffect(() => {
     const t = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
-  const lastClockEntry = [...log]
-    .reverse()
-    .find((e) => e?.type === "IN" || e?.type === "OUT"); //since before even a break can start the user has to be clocked in we can just check for the last clock in entry to get the job info for the break entries
 
-  const toggleBreak = () => {
-    const type = onBreak ? "break-end" : "break-start";
+  const toggleBreak = useCallback(async () => {
+    const endingBreak = onBreak;
+    const type = endingBreak ? "break-end" : "break-start";
+    const now = new Date();
     const entry = {
-      time: new Date(),
+      time: now,
       type,
-      jobId: lastClockEntry.jobId,
-      jobTitle: lastClockEntry.jobTitle,
+      jobId: lastClockEntry?.jobId,
+      jobTitle: lastClockEntry?.jobTitle,
     };
-    setOnBreak(!onBreak);
-    setLog((prev) => [...prev, entry]);
-  };
-  // Persist log to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem(`timelog_${user?.uid}`, JSON.stringify(log));
-    } catch {
-      // localStorage quota exceeded or unavailable — fail silently
-    }
-  }, [log, user?.uid]);
+
+    
+    setOnBreak(!endingBreak);
+    setLog((prev) => {
+      const updated = [...prev, entry];
+
+      // When ending a break, persist the running total to Firestore
+      if (endingBreak && lastClockEntry?.jobId) {
+        const breakSeconds = getTotalBreakSeconds(updated);
+        updateDoc(doc(database, "upcoming_events", lastClockEntry.jobId), {
+          [`attendance.${user.uid}.breakSeconds`]: breakSeconds,
+        }).catch((err) => console.error("Failed to save break time:", err));
+      }
+
+      return updated;
+    });
+  }, [onBreak, lastClockEntry, user]);
 
   const getTotalBreakSeconds = (entries) => {
     let total = 0;
@@ -87,6 +102,7 @@ function TimeClockModal({ user, jobs = [] }) {
 
     return total / 1000; // return in seconds
   };
+
   const parseDate = (date) => {
     if (date?.toDate) return date.toDate();
     const [year, month, day] = date.split("-").map(Number);
@@ -96,6 +112,32 @@ function TimeClockModal({ user, jobs = [] }) {
   const sortedJobs = [...jobs].sort((a, b) => {
     return parseDate(a.date) - parseDate(b.date);
   });
+
+  useEffect(() => {
+    if (
+      lastClockEntry?.type === "IN" ||
+      lastClockEntry?.type === "break-start"
+    ) {
+      const entryDate = new Date(lastClockEntry.time);
+      entryDate.setHours(0, 0, 0, 0);
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (entryDate < today) {
+        // Clock entry is from a previous calendar day, auto clock out at midnight
+        const autoClockOut = {
+          type: "OUT",
+          time: new Date(),
+          jobId: lastClockEntry.jobId,
+          jobTitle: lastClockEntry.jobTitle,
+        };
+
+        setLog((prev) => [...prev, autoClockOut]);
+        setLastClockEntry(autoClockOut); // update state properly
+      }
+    }
+  }, [lastClockEntry]); // re-run whenever lastClockEntry changes
 
   const upcomingJobs = sortedJobs.filter((job) => {
     const jobDate = parseDate(job.date);
@@ -116,10 +158,6 @@ function TimeClockModal({ user, jobs = [] }) {
       month: "short",
       day: "numeric",
     });
-
-  const lastEntry = log[log.length - 1];
-
-  const isClockedIn = lastClockEntry?.type === "IN";
 
   const clockIn = useCallback(async () => {
     if (!selectedJob || loading) return;
@@ -156,11 +194,9 @@ function TimeClockModal({ user, jobs = [] }) {
     if (!lastClockEntry || loading) return;
     setError(null);
     setLoading(true);
-    const breakSeconds = getTotalBreakSeconds(log);
     try {
       await updateDoc(doc(database, "upcoming_events", lastClockEntry.jobId), {
-        [`attendance.${user.uid}.timeOut`]: new Date(),
-        [`attendance.${user.uid}.breakSeconds`]: breakSeconds,
+        [`attendance.${user.uid}.timeOut`]: new Date()
       });
       setLog((prev) => [
         ...prev,
@@ -180,7 +216,7 @@ function TimeClockModal({ user, jobs = [] }) {
     } finally {
       setLoading(false);
     }
-  }, [lastClockEntry, loading, user, log]);
+  }, [lastClockEntry, loading, user]);
 
   const openModal = () => {
     setSelected(null);
@@ -215,10 +251,10 @@ function TimeClockModal({ user, jobs = [] }) {
             className={`badge mb-1 fs-6 ${isClockedIn ? "bg-success" : "bg-secondary"}`}
           >
             {isClockedIn ? "● Clocked In" : "○ Clocked Out"} at{" "}
-            {lastEntry ? fmt(lastEntry.time) : "N/A"}
+            {lastClockEntry ? fmt(lastClockEntry.time) : "N/A"}
           </span>
           {isClockedIn && (
-            <p className="text-muted small mb-2">{lastEntry.jobTitle}</p>
+            <p className="text-muted small mb-2">{lastClockEntry.jobTitle}</p>
           )}
 
           <button className="btn btn-primary w-100 mt-2" onClick={openModal}>
@@ -406,7 +442,7 @@ function TimeClockModal({ user, jobs = [] }) {
                               className={`small ${isSelected ? "text-white" : "text-muted"}`}
                             >
                               {new Date(job.date).toString().slice(0, 10)} at
-                               {job.startTime}
+                              {job.startTime}
                             </span>
                           </button>
                         );

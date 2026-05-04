@@ -80,9 +80,9 @@ function Reports({ user }) {
             const dept = event.department || "Unassigned";
 
             if (!deptStatsObj[dept]) {
-                deptStatsObj[dept] = { department: dept, totalShifts: 0, totalMinutes: 0 };
+                deptStatsObj[dept] = { department: dept, totalJobs: 0, totalShifts: 0, totalMinutes: 0 };
             }
-            deptStatsObj[dept].totalShifts += 1;
+            deptStatsObj[dept].totalJobs += 1;
 
             const attendance = event.attendance || {};
             Object.values(attendance).forEach((record) => {
@@ -92,6 +92,7 @@ function Reports({ user }) {
                 const studentName = userInfo.name;
                 const displayId = userInfo.realId;
 
+                deptStatsObj[dept].totalShifts += 1;
                 const minutesWorked = (record.hours || 0) * 60 + (record.minutes || 0);
 
                 deptStatsObj[dept].totalMinutes += minutesWorked;
@@ -109,10 +110,12 @@ function Reports({ user }) {
 
                 if (minutesWorked > 0) {
                     rawLogsArr.push({
+                        eventId: event.id,
                         date: event.date,
                         title: event.title,
                         department: dept,
                         studentName: studentName,
+                        studentId: displayId,
                         supervisor: event.supervisor,
                         location: event.location,
                         formattedTime: formatTime(minutesWorked),
@@ -122,10 +125,32 @@ function Reports({ user }) {
             });
         });
 
+        const finalStudentStats = Object.values(studentStatsObj).map(s => ({ ...s, formattedTime: formatTime(s.totalMinutes) }));
+        const finalDeptStats = Object.values(deptStatsObj).map(d => ({ ...d, formattedTime: formatTime(d.totalMinutes) }));
+
         return {
-            studentStats: Object.values(studentStatsObj).map(s => ({ ...s, formattedTime: formatTime(s.totalMinutes) })),
-            deptStats: Object.values(deptStatsObj).map(d => ({ ...d, formattedTime: formatTime(d.totalMinutes) })),
-            rawLogs: rawLogsArr
+            studentStats: finalStudentStats,
+            deptStats: finalDeptStats,
+            rawLogs: rawLogsArr,
+
+            deptTotals: [{
+                department: `Totals: ${finalDeptStats.length} Departments`,
+                totalJobs: finalDeptStats.reduce((sum, item) => sum + item.totalJobs, 0),
+                totalShifts: finalDeptStats.reduce((sum, item) => sum + item.totalShifts, 0),
+                totalMinutes: finalDeptStats.reduce((sum, item) => sum + item.totalMinutes, 0)
+            }],
+            studentTotals: [{
+                studentName: `Totals: ${finalStudentStats.length} Students`,
+                totalJobs: finalStudentStats.reduce((sum, item) => sum + item.totalJobs, 0),
+                totalMinutes: finalStudentStats.reduce((sum, item) => sum + item.totalMinutes, 0)
+            }],
+            rawTotals: [{
+                date: `Totals: ${rawLogsArr.length} Shifts`,
+                studentName: `${new Set(rawLogsArr.map(log => log.studentName)).size} Students`, // May need to switch to use studentId if repeat names is an issue
+                department: `${new Set(rawLogsArr.map(log => log.department)).size} Departments`,
+                title: `${new Set(rawLogsArr.map(log => log.eventId)).size} Jobs`,
+                rawMinutes: rawLogsArr.reduce((sum, item) => sum + item.rawMinutes, 0)
+            }]
         };
     }, [allEvents, userMap, startDate, endDate]);
 
@@ -133,7 +158,8 @@ function Reports({ user }) {
 
     const deptColDefs = [
         { field: "department", headerName: "Department" },
-        { field: "totalShifts", headerName: "Total Shifts", filter: "agNumberColumnFilter" },
+        { field: "totalJobs", headerName: "Total Jobs", filter: "agNumberColumnFilter", valueFormatter: (p) => p.node.rowPinned === 'bottom' ? `${p.value} Jobs` : p.value },
+        { field: "totalShifts", headerName: "Total Shifts", filter: "agNumberColumnFilter", valueFormatter: (p) => p.node.rowPinned === 'bottom' ? `${p.value} Shifts` : p.value },
         { headerName: "Total Time",
             field: "totalMinutes",
             filter: "agNumberColumnFilter",
@@ -151,7 +177,7 @@ function Reports({ user }) {
     const studentColDefs = [
         { field: "studentName", headerName: "Student Name" },
         { field: "studentId", headerName: "Student ID" },
-        { field: "totalJobs", headerName: "Jobs Worked", filter: "agNumberColumnFilter" },
+        { field: "totalJobs", headerName: "Shifts Worked", filter: "agNumberColumnFilter", valueFormatter: (p) => p.node.rowPinned === 'bottom' ? `${p.value} Jobs` : p.value },
         { headerName: "Total Time",
             field: "totalMinutes",
             filter: "agNumberColumnFilter",
@@ -167,7 +193,7 @@ function Reports({ user }) {
     ];
 
     const rawColDefs = [
-        { field: "date", headerName: "Date", filter: "agDateColumnFilter" },
+        { field: "date", headerName: "Date", filter: "agDateColumnFilter", valueFormatter: (params) => params.value },
         { field: "studentName", headerName: "Student" },
         { field: "department", headerName: "Department" },
         { field: "title", headerName: "Job Title" },
@@ -197,7 +223,7 @@ function Reports({ user }) {
             {/* HEADER & GLOBAL FILTERS */}
             <div className="d-flex justify-content-between align-items-start mb-2">
                 <div>
-                    <h2 style={{ color: "var(--color-primary-blue-light)", fontWeight: "700", margin: 0 }}>Reports Engine</h2>
+                    <h2 style={{ color: "var(--color-primary-blue-light)", fontWeight: "700", margin: 0 }}>Reports</h2>
                     <p style={{ color: "var(--color-text-secondary)", marginBottom: 0 }}>Dynamic filtering and exporting for employment data.</p>
                 </div>
 
@@ -238,6 +264,7 @@ function Reports({ user }) {
                                         ref={deptGridRef}
                                         theme="legacy"
                                         rowData={processedData.deptStats}
+                                        pinnedBottomRowData={processedData.deptTotals}
                                         columnDefs={deptColDefs}
                                         defaultColDef={defaultColDef}
                                         pagination={true}
@@ -263,6 +290,7 @@ function Reports({ user }) {
                                         ref={studentGridRef}
                                         theme="legacy"
                                         rowData={processedData.studentStats}
+                                        pinnedBottomRowData={processedData.studentTotals}
                                         columnDefs={studentColDefs}
                                         defaultColDef={defaultColDef}
                                         pagination={true}
@@ -288,6 +316,7 @@ function Reports({ user }) {
                                         ref={rawGridRef}
                                         theme="legacy"
                                         rowData={processedData.rawLogs}
+                                        pinnedBottomRowData={processedData.rawTotals}
                                         columnDefs={rawColDefs}
                                         defaultColDef={defaultColDef}
                                         pagination={true}
