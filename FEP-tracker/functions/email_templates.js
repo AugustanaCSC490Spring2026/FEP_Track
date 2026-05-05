@@ -191,8 +191,70 @@ function calendarAssignedTemplate(job) {
     };
 }
 
+function newUserTemplate(user) {
+  return {
+    subject: "Welcome to FEP Tracker",
+
+    text: `
+Welcome to FEP Tracker!
+
+Your account has been successfully created.
+
+You can now log in and begin applying for available jobs.
+
+----------------------------------------
+
+Email: ${user.email || "Your registered email"}
+
+----------------------------------------
+
+Next Steps:
+- Log in to the platform
+- Browse available jobs
+- Connect your Google Calendar (optional)
+
+If you have any questions, please contact your administrator.
+
+Welcome aboard!
+    `,
+
+    html: `
+<div style="font-family: Arial; max-width:600px; margin:auto; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
+
+  <div style="background:#16a34a; color:white; padding:14px;">
+    <h2 style="margin:0;">Welcome to FEP Tracker</h2>
+  </div>
+
+  <div style="padding:18px;">
+
+    <p>Your account has been successfully created.</p>
+
+    <div style="background:#f3f4f6; padding:12px; border-radius:6px;">
+      <p><strong>Email:</strong> ${user.email || "Your registered email"}</p>
+    </div>
+
+    <div style="margin-top:16px;">
+      <p style="margin:0 0 6px 0; font-weight:bold;">Next Steps</p>
+      <ul style="margin:0; padding-left:18px;">
+        <li>Log in to the platform</li>
+        <li>Browse available jobs</li>
+        <li>Connect your Google Calendar (optional)</li>
+      </ul>
+    </div>
+
+    <p style="margin-top:16px; font-size:12px; color:#6b7280;">
+      If you have any questions, please contact your administrator.
+    </p>
+
+  </div>
+</div>
+    `,
+  };
+}
+
 module.exports = {
   newJobTemplate,
   spotOpenedTemplate,
   calendarAssignedTemplate,
+  newUserTemplate,
 };

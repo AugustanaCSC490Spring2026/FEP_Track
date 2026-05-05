@@ -1,8 +1,9 @@
 const { onDocumentUpdated } = require("firebase-functions/v2/firestore");
 const { getFirestore } = require("firebase-admin/firestore");
-const { calendarAssignedTemplate } = require("./email_templates")
-const { GMAIL_EMAIL, GMAIL_PASSWORD, sendEmail } = require("./email_service");
 
+const { calendarAssignedTemplate } = require("./email_templates");
+const { GMAIL_EMAIL, GMAIL_PASSWORD, sendEmail } = require("./email_service");
+const ENABLE_EMAILS = false;
 
 
 exports.sendCalendarInvite = onDocumentUpdated(
@@ -11,11 +12,10 @@ exports.sendCalendarInvite = onDocumentUpdated(
     secrets: [GMAIL_EMAIL, GMAIL_PASSWORD],
   },
   async (event) => {
-
     const db = getFirestore();
 
-    const before = event.data.before.data();
-    const after = event.data.after.data();
+    const before = event.data.before?.data() || {};
+    const after = event.data.after?.data() || {};
 
     const beforeStudents = before.students || [];
     const afterStudents = after.students || [];
@@ -29,86 +29,102 @@ exports.sendCalendarInvite = onDocumentUpdated(
       return;
     }
 
+    console.log("New students:", newStudents);
 
     const job = after;
+    if(ENABLE_EMAILS){
+      
 
-    for (const userId of newStudents) {
-      try {
-        const userSnap = await db.collection("users").doc(userId).get();
-        const user = userSnap.data();
+      await Promise.all(
+        newStudents.map(async (userId) => {
+          try {
+            const userSnap = await db.collection("users").doc(userId).get();
+            const user = userSnap.data();
 
-        if (!user?.googleCalendarConnected) {
-          console.log(`User ${userId} not connected to Google`);
-          continue;
-        }
+            if (!user?.googleCalendarConnected) {
+              console.log(`User ${userId} not connected`);
+              return;
+            }
 
-        const tokenRes = await fetch(
-          "https://us-central1-fep-tracker.cloudfunctions.net/refreshGoogleToken",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ uid: userId }),
-          }
-        );
+            if (!user?.email) {
+              console.log(`User ${userId} missing email`);
+              return;
+            }
 
-        const tokenData = await tokenRes.json();
 
-        if (!tokenRes.ok || !tokenData.access_token) {
-          continue;
-        }
+            const tokenRes = await fetch(
+              "https://us-central1-fep-tracker.cloudfunctions.net/refreshGoogleToken",
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ uid: userId }),
+              }
+            );
 
-        const accessToken = tokenData.access_token;
+            const tokenData = await tokenRes.json();
 
-        const eventBody = {
-            summary: job.title,
-            location: job.location || "TBD",
-            description: job.extra_details || "",
+            if (!tokenRes.ok || !tokenData.access_token) {
+              console.error("Token refresh failed:", tokenData);
+              return;
+            }
 
-            start: {
+            const accessToken = tokenData.access_token;
+
+            const eventBody = {
+              summary: job.title,
+              location: job.location || "TBD",
+              description: job.extra_details || "",
+
+              start: {
                 dateTime: buildDateTime(job.date, job.startTime),
                 timeZone: "America/Chicago",
-            },
+              },
 
-            end: {
+              end: {
                 dateTime: buildDateTime(job.date, job.endTime),
                 timeZone: "America/Chicago",
-            },
+              },
 
-            attendees: [{ email: user.email }],
+              attendees: [{ email: user.email }],
             };
 
-        const res = await fetch(
-          "https://www.googleapis.com/calendar/v3/calendars/primary/events?sendUpdates=all",
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(eventBody),
+            const res = await fetch(
+              "https://www.googleapis.com/calendar/v3/calendars/primary/events?sendUpdates=all",
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(eventBody),
+              }
+            );
+
+            const data = await res.json();
+
+            if (!res.ok) {
+              console.error("Google Calendar ERROR:", data);
+              return;
+            }
+
+            console.log(" Calendar event:", data.id);
+
+
+            const emailContent = calendarAssignedTemplate(job);
+            
+            await sendEmail({
+              to: user.email,
+              subject: emailContent.subject,
+              text: emailContent.text,
+              html: emailContent.html,
+            });
+
+            console.log(` Email sent to ${user.email}`);
+          } catch (err) {
+            console.error(` Failed for user ${userId}`, err);
           }
-        );
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          continue;
-        }
-
-       console.log(" Calendar invite created:", data.id);
-
-       console.log(calendarAssignedTemplate)
-        const emailContent = calendarAssignedTemplate(job);
-
-        await sendEmail({
-        to: user.email,
-        subject: emailContent.subject,
-        text: emailContent.text,
-        html: emailContent.html,
-        });
-      } catch (err) {
-        console.error(`Failed for user ${userId}`, err);
-      }
+        })
+      );
     }
   }
 );

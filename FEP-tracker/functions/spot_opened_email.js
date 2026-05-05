@@ -1,6 +1,14 @@
 const { onDocumentUpdated } = require("firebase-functions/v2/firestore");
-const { sendEmail, GMAIL_EMAIL, GMAIL_PASSWORD } = require("./email_service");
+
+const {
+  sendEmail,
+  GMAIL_EMAIL,
+  GMAIL_PASSWORD,
+} = require("./email_service"); 
+
 const { spotOpenedTemplate } = require("./email_templates");
+const ENABLE_EMAILS = false;
+
 
 exports.sendSpotOpenedEmail = onDocumentUpdated(
   {
@@ -8,22 +16,32 @@ exports.sendSpotOpenedEmail = onDocumentUpdated(
     secrets: [GMAIL_EMAIL, GMAIL_PASSWORD],
   },
   async (event) => {
-    const before = event.data.before.data();
-    const after = event.data.after.data();
+    const before = event.data.before?.data() || {};
+    const after = event.data.after?.data() || {};
 
     const beforeCount = (before.students || []).length;
     const afterCount = (after.students || []).length;
 
-
-    if (afterCount >= beforeCount) return;
+    if (afterCount >= beforeCount) {
+      return;
+    }
 
     console.log("Spot opened → sending email");
+    if (ENABLE_EMAILS){
+      try {
+        const email = spotOpenedTemplate(after);
 
-    const email = spotOpenedTemplate(after);
+        await sendEmail({
+          to: GMAIL_EMAIL.value(),
+          subject: email.subject,
+          text: email.text,
+          html: email.html,
+        });
 
-    await sendEmail({
-      to: GMAIL_EMAIL.value(), // T
-      ...email,
-    });
+        console.log(" Spot opened email sent");
+      } catch (err) {
+        console.error(" Failed to send spot opened email:", err);
+      }
+    }
   }
 );
