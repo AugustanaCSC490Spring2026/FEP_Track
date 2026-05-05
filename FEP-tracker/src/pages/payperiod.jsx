@@ -8,8 +8,10 @@ import {
   doc,
   getDoc,
 } from "firebase/firestore";
+import Container from "react-bootstrap/Container";
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
 import Card from "react-bootstrap/Card";
-import Modal from "react-bootstrap/Modal";
 import Table from "react-bootstrap/Table";
 import Badge from "react-bootstrap/Badge";
 import Spinner from "react-bootstrap/Spinner";
@@ -25,6 +27,7 @@ function parseDate(val) {
 }
 
 function formatPeriodRange(period) {
+  if (!period) return "";
   const fmt = (val) => {
     const date = parseDate(val);
     if (!date) return "?";
@@ -41,35 +44,33 @@ function formatHours(hours, minutes) {
   return `${hours}:${(minutes ?? 0).toString().padStart(2, "0")}`;
 }
 
-// ── Student Modal ─────────────────────────────────────────────────────────────
+// ── Student Details Component ──────────────────────────────
 
-function StudentModal({ show, onHide, period, user }) {
+function StudentPeriodDetails({ period, user }) {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!show || !period || !user) return;
+    if (!period || !user) return;
 
     async function loadJobs() {
       setLoading(true);
       try {
         const attendance = period.attendance?.[user.uid] ?? [];
-        /* console.log("Loading jobs for user:", user.uid, "Attendance entries:", attendance); */
         const resolved = await Promise.all(
-          attendance.map(async (entry) => {
-            try {
-              const jobDoc = await getDoc(
-                doc(database, "completed_events", entry.job_id),
-              );
-              /*  console.log("Resolving job ID:", entry.job_id, "Found:", jobDoc.exists()); */
-              const jobName = jobDoc.exists()
-                ? jobDoc.data().title
-                : entry.job_id;
-              return { ...entry, jobName };
-            } catch {
-              return { ...entry, jobName: entry.job_id };
-            }
-          }),
+            attendance.map(async (entry) => {
+              try {
+                const jobDoc = await getDoc(
+                    doc(database, "completed_events", entry.job_id),
+                );
+                const jobName = jobDoc.exists()
+                    ? jobDoc.data().title
+                    : entry.job_id;
+                return { ...entry, jobName };
+              } catch {
+                return { ...entry, jobName: entry.job_id };
+              }
+            }),
         );
         setJobs(resolved);
       } catch (err) {
@@ -80,132 +81,80 @@ function StudentModal({ show, onHide, period, user }) {
     }
 
     loadJobs();
-  }, [show, period, user]);
+  }, [period, user]);
 
   const totalMins = jobs.reduce(
-    (sum, j) => sum + (j.hours ?? 0) * 60 + (j.minutes ?? 0),
-    0,
+      (sum, j) => sum + (j.hours ?? 0) * 60 + (j.minutes ?? 0),
+      0,
   );
   const totalHours = Math.floor(totalMins / 60);
   const leftoverMinutes = totalMins % 60;
 
   return (
-    <Modal show={show} onHide={onHide} centered>
-      <Modal.Header closeButton style={{ borderBottom: "1px solid #e5e7eb" }}>
-        <Modal.Title
-          style={{ color: "#1b3a5c", fontSize: "1rem", fontWeight: 700 }}
-        >
-          My Hours — {period ? formatPeriodRange(period) : ""}
-        </Modal.Title>
-      </Modal.Header>
+      <Card className="border-0 shadow-sm rounded-3" style={{ backgroundColor: "var(--color-bg-card)", height: "100%", display: "flex", flexDirection: "column" }}>
+        <Card.Header className="bg-white border-bottom py-3">
+          <h5 style={{ color: "#1b3a5c", fontWeight: 700, margin: 0 }}>
+            My Hours — {formatPeriodRange(period)}
+          </h5>
+        </Card.Header>
 
-      <Modal.Body className="p-0">
-        {loading ? (
-          <div className="d-flex justify-content-center align-items-center py-5">
-            <Spinner animation="border" style={{ color: "#1b3a5c" }} />
-          </div>
-        ) : jobs.length === 0 ? (
-          <p className="text-muted text-center py-4 mb-0">
-            No hours recorded for this period.
-          </p>
-        ) : (
-          <>
-            <Table className="mb-0" hover>
-              <thead style={{ backgroundColor: "#f3f4f6" }}>
+        {/* Scrollable Body */}
+        <Card.Body className="p-0 bg-white" style={{ flexGrow: 1, overflowY: "auto" }}>
+          {loading ? (
+              <div className="d-flex justify-content-center align-items-center py-5">
+                <Spinner animation="border" style={{ color: "#1b3a5c" }} />
+              </div>
+          ) : jobs.length === 0 ? (
+              <p className="text-muted text-center py-5 mb-0">
+                No hours recorded for this period.
+              </p>
+          ) : (
+              <Table className="mb-0" hover>
+                {/* Sticky Header Fix */}
+                <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                 <tr>
-                  <th
-                    style={{
-                      color: "#6b7280",
-                      fontWeight: 600,
-                      fontSize: "0.8rem",
-                      border: "none",
-                      padding: "10px 16px",
-                    }}
-                  >
-                    JOB
-                  </th>
-                  <th
-                    className="text-end"
-                    style={{
-                      color: "#6b7280",
-                      fontWeight: 600,
-                      fontSize: "0.8rem",
-                      border: "none",
-                      padding: "10px 16px",
-                    }}
-                  >
-                    HOURS
-                  </th>
+                  <th style={{ backgroundColor: "#f3f4f6", color: "#6b7280", fontWeight: 600, fontSize: "0.85rem", padding: "12px 20px", border: "none" }}>JOB</th>
+                  <th className="text-end" style={{ backgroundColor: "#f3f4f6", color: "#6b7280", fontWeight: 600, fontSize: "0.85rem", padding: "12px 20px", border: "none" }}>HOURS</th>
                 </tr>
-              </thead>
-              <tbody>
+                </thead>
+                <tbody>
                 {jobs.map((job, i) => (
-                  <tr key={i}>
-                    <td
-                      style={{
-                        color: "#1b3a5c",
-                        fontWeight: 600,
-                        padding: "12px 16px",
-                        borderColor: "#e5e7eb",
-                      }}
-                    >
-                      {job.jobName}
-                    </td>
-                    <td
-                      className="text-end"
-                      style={{
-                        color: "#374151",
-                        padding: "12px 16px",
-                        borderColor: "#e5e7eb",
-                      }}
-                    >
-                      
-                      {formatHours(job.hours ?? 0, job.minutes ?? 0)}
-                    </td>
-                  </tr>
+                    <tr key={i}>
+                      <td style={{ color: "#1b3a5c", fontWeight: 600, padding: "16px 20px", borderColor: "#e5e7eb" }}>
+                        {job.jobName}
+                      </td>
+                      <td className="text-end" style={{ color: "#374151", padding: "16px 20px", borderColor: "#e5e7eb" }}>
+                        {formatHours(job.hours ?? 0, job.minutes ?? 0)}
+                      </td>
+                    </tr>
                 ))}
-              </tbody>
-            </Table>
+                </tbody>
+              </Table>
+          )}
+        </Card.Body>
 
-            <div
-              className="d-flex justify-content-between align-items-center px-3 py-3"
-              style={{
-                backgroundColor: "#eff6ff",
-                borderTop: "2px solid #bfdbfe",
-              }}
-            >
-              <span className="fw-bold" style={{ color: "#1b3a5c" }}>
-                Total
-              </span>
-              <Badge
-                style={{
-                  backgroundColor: "#1b3a5c",
-                  fontSize: "0.85rem",
-                  padding: "6px 12px",
-                }}
-              >
-                {formatHours(totalHours, leftoverMinutes)}
-              </Badge>
-            </div>
-          </>
-        )}
-      </Modal.Body>
-    </Modal>
+        {/* Pinned Footer */}
+        <div className="d-flex justify-content-between align-items-center px-4 py-3 rounded-bottom" style={{ backgroundColor: "#eff6ff", borderTop: "2px solid #bfdbfe" }}>
+          <span className="fw-bold" style={{ color: "#1b3a5c", fontSize: "1.1rem" }}>Total</span>
+          <Badge style={{ backgroundColor: "#1b3a5c", fontSize: "0.95rem", padding: "8px 16px" }}>
+            {formatHours(totalHours, leftoverMinutes)}
+          </Badge>
+        </div>
+      </Card>
   );
 }
 
-// ── Staff Modal ───────────────────────────────────────────────────────────────
+// ── Staff Details Component ────────────────────────────────
 
-function StaffModal({ show, onHide, period }) {
+function StaffPeriodDetails({ period }) {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [jobs, setJobs] = useState([]);
   const [jobsLoading, setJobsLoading] = useState(false);
 
-  // ── Load all students when modal opens ──
   useEffect(() => {
-    if (!show || !period) return;
+    if (!period) return;
     setSelectedStudent(null);
     setJobs([]);
 
@@ -214,39 +163,25 @@ function StaffModal({ show, onHide, period }) {
       try {
         const attendance = period.attendance ?? {};
         const resolved = await Promise.all(
-          Object.entries(attendance).map(async ([uid, entries]) => {
-            let name = uid;
-            try {
-              const userDoc = await getDoc(doc(database, "users", uid));
-              if (userDoc.exists()) {
-                const data = userDoc.data();
-               
-                name = data.name;
-              }
-            } catch {
+            Object.entries(attendance).map(async ([uid, entries]) => {
+              let name = uid;
+              try {
+                const userDoc = await getDoc(doc(database, "users", uid));
+                if (userDoc.exists()) {
+                  name = userDoc.data().name;
+                }
+              } catch {
                 // ignore and just use uid as name
-            }
+              }
 
-            const totalMins = entries.reduce(
-              (sum, e) => sum + (e.hours ?? 0) * 60 + (e.minutes ?? 0),
-              0,
-            );
-            const hours = Math.floor(totalMins / 60);
-            const minutes = totalMins % 60;
+              const totalMins = entries.reduce((sum, e) => sum + (e.hours ?? 0) * 60 + (e.minutes ?? 0), 0);
+              const hours = Math.floor(totalMins / 60);
+              const minutes = totalMins % 60;
 
-            return {
-              uid,
-              name,
-              hours,
-              minutes,
-              jobCount: entries.length,
-              entries,
-            };
-          }),
+              return { uid, name, hours, minutes, jobCount: entries.length, entries };
+            }),
         );
-        resolved.sort(
-          (a, b) => b.hours * 60 + b.minutes - (a.hours * 60 + a.minutes),
-        );
+        resolved.sort((a, b) => b.hours * 60 + b.minutes - (a.hours * 60 + a.minutes));
         setStudents(resolved);
       } catch (err) {
         console.error("Error loading staff attendance:", err);
@@ -256,27 +191,22 @@ function StaffModal({ show, onHide, period }) {
     }
 
     loadStudents();
-  }, [show, period]);
+  }, [period]);
 
-  // ── Load job details when a student row is clicked ──
   async function handleStudentClick(student) {
     setSelectedStudent(student);
     setJobsLoading(true);
     try {
       const resolved = await Promise.all(
-        student.entries.map(async (entry) => {
-          try {
-            const jobDoc = await getDoc(
-              doc(database, "completed_events", entry.job_id),
-            );
-            const jobName = jobDoc.exists()
-              ? jobDoc.data().title
-              : entry.job_id;
-            return { ...entry, jobName };
-          } catch {
-            return { ...entry, jobName: entry.job_id };
-          }
-        }),
+          student.entries.map(async (entry) => {
+            try {
+              const jobDoc = await getDoc(doc(database, "completed_events", entry.job_id));
+              const jobName = jobDoc.exists() ? jobDoc.data().title : entry.job_id;
+              return { ...entry, jobName };
+            } catch {
+              return { ...entry, jobName: entry.job_id };
+            }
+          }),
       );
       setJobs(resolved);
     } catch (err) {
@@ -291,267 +221,114 @@ function StaffModal({ show, onHide, period }) {
     setJobs([]);
   }
 
-  const grandTotalMins = students.reduce(
-    (sum, s) => sum + s.hours * 60 + s.minutes,
-    0,
-  );
+  const grandTotalMins = students.reduce((sum, s) => sum + s.hours * 60 + s.minutes, 0);
   const grandHours = Math.floor(grandTotalMins / 60);
   const grandMinutes = grandTotalMins % 60;
 
-  const studentTotalMins = jobs.reduce(
-    (sum, j) => sum + (j.hours ?? 0) * 60 + (j.minutes ?? 0),
-    0,
-  );
+  const studentTotalMins = jobs.reduce((sum, j) => sum + (j.hours ?? 0) * 60 + (j.minutes ?? 0), 0);
   const studentTotalHours = Math.floor(studentTotalMins / 60);
   const studentTotalMinutes = studentTotalMins % 60;
 
   return (
-    <Modal show={show} onHide={onHide} centered>
-      <Modal.Header closeButton style={{ borderBottom: "1px solid #e5e7eb" }}>
-        <Modal.Title
-          style={{ color: "#1b3a5c", fontSize: "1rem", fontWeight: 700 }}
-        >
+      <Card className="border-0 shadow-sm rounded-3" style={{ backgroundColor: "var(--color-bg-card)", height: "100%", display: "flex", flexDirection: "column" }}>
+        <Card.Header className="bg-white border-bottom py-3 d-flex align-items-center">
           {selectedStudent ? (
-            <span>
-              {/* Back button */}
-              <button
-                onClick={handleBack}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: "#4a90d9",
-                  fontWeight: 600,
-                  fontSize: "0.9rem",
-                  padding: "0 8px 0 0",
-                  cursor: "pointer",
-                }}
-              >
-                ‹ Back
-              </button>
-              {selectedStudent.name}
-            </span>
+              <>
+                <button
+                    onClick={handleBack}
+                    style={{ background: "none", border: "none", color: "#4a90d9", fontWeight: 600, padding: "0 16px 0 0", cursor: "pointer" }}
+                >
+                  ‹ Back
+                </button>
+                <h5 style={{ color: "#1b3a5c", fontWeight: 700, margin: 0 }}>{selectedStudent.name}'s Hours — {formatPeriodRange(period)}</h5>
+              </>
           ) : (
-            <>All Students — {period ? formatPeriodRange(period) : ""}</>
+              <h5 style={{ color: "#1b3a5c", fontWeight: 700, margin: 0 }}>
+                All Students — {formatPeriodRange(period)}
+              </h5>
           )}
-        </Modal.Title>
-      </Modal.Header>
+        </Card.Header>
 
-      <Modal.Body className="p-0">
-        {!selectedStudent &&
-          (loading ? (
-            <div className="d-flex justify-content-center align-items-center py-5">
-              <Spinner animation="border" style={{ color: "#1b3a5c" }} />
-            </div>
-          ) : students.length === 0 ? (
-            <p className="text-muted text-center py-4 mb-0">
-              No attendance recorded for this period.
-            </p>
+        {/* Scrollable Body Zone */}
+        <Card.Body className="p-0 bg-white" style={{ flexGrow: 1, overflowY: "auto", minHeight: 0 }}>
+          {!selectedStudent &&
+              (loading ? (
+                  <div className="d-flex justify-content-center align-items-center py-5">
+                    <Spinner animation="border" style={{ color: "#1b3a5c" }} />
+                  </div>
+              ) : students.length === 0 ? (
+                  <p className="text-muted text-center py-5 mb-0">No attendance recorded for this period.</p>
+              ) : (
+                  <>
+                    <Table className="mb-0" hover>
+                      {/* Removed 'responsive', added background color to th, and zIndex */}
+                      <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+                      <tr>
+                        <th style={{ backgroundColor: "#f3f4f6", color: "#6b7280", fontWeight: 600, fontSize: "0.85rem", padding: "12px 20px", border: "none" }}>STUDENT</th>
+                        <th className="text-center" style={{ backgroundColor: "#f3f4f6", color: "#6b7280", fontWeight: 600, fontSize: "0.85rem", padding: "12px 20px", border: "none" }}>JOBS</th>
+                        <th className="text-end" style={{ backgroundColor: "#f3f4f6", color: "#6b7280", fontWeight: 600, fontSize: "0.85rem", padding: "12px 20px", border: "none" }}>TOTAL HRS</th>
+                      </tr>
+                      </thead>
+                      <tbody>
+                      {students.map((s) => (
+                          <tr key={s.uid} style={{ cursor: "pointer" }} onClick={() => handleStudentClick(s)}>
+                            <td style={{ color: "#1b3a5c", fontWeight: 600, padding: "16px 20px", borderColor: "#e5e7eb" }}>
+                              {s.name}
+                              <span style={{ color: "#9ca3af", fontSize: "0.8rem", marginLeft: 8 }}>view jobs ›</span>
+                            </td>
+                            <td className="text-center" style={{ color: "#6b7280", padding: "16px 20px", borderColor: "#e5e7eb" }}>{s.jobCount}</td>
+                            <td className="text-end" style={{ color: "#374151", padding: "16px 20px", borderColor: "#e5e7eb" }}>{formatHours(s.hours, s.minutes)}</td>
+                          </tr>
+                      ))}
+                      </tbody>
+                    </Table>
+                  </>
+              ))}
+
+          {selectedStudent &&
+              (jobsLoading ? (
+                  <div className="d-flex justify-content-center align-items-center py-5">
+                    <Spinner animation="border" style={{ color: "#1b3a5c" }} />
+                  </div>
+              ) : jobs.length === 0 ? (
+                  <p className="text-muted text-center py-5 mb-0">No jobs found.</p>
+              ) : (
+                  <>
+                    <Table className="mb-0" hover>
+                      <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+                      <tr>
+                        <th style={{ backgroundColor: "#f3f4f6", color: "#6b7280", fontWeight: 600, fontSize: "0.85rem", padding: "12px 20px", border: "none" }}>JOB</th>
+                        <th className="text-end" style={{ backgroundColor: "#f3f4f6", color: "#6b7280", fontWeight: 600, fontSize: "0.85rem", padding: "12px 20px", border: "none" }}>HOURS</th>
+                      </tr>
+                      </thead>
+                      <tbody>
+                      {jobs.map((job, i) => (
+                          <tr key={i}>
+                            <td style={{ color: "#1b3a5c", fontWeight: 600, padding: "16px 20px", borderColor: "#e5e7eb" }}>{job.jobName}</td>
+                            <td className="text-end" style={{ color: "#374151", padding: "16px 20px", borderColor: "#e5e7eb" }}>{formatHours(job.hours ?? 0, job.minutes ?? 0)}</td>
+                          </tr>
+                      ))}
+                      </tbody>
+                    </Table>
+                  </>
+              ))}
+        </Card.Body>
+
+        {/* Pinned Footer */}
+        <div className="d-flex justify-content-between align-items-center px-4 py-3 rounded-bottom" style={{ backgroundColor: "#eff6ff", borderTop: "2px solid #bfdbfe" }}>
+          {!selectedStudent ? (
+              <>
+                <span className="fw-bold" style={{ color: "#1b3a5c", fontSize: "1.1rem" }}>Grand Total ({students.length})</span>
+                <Badge style={{ backgroundColor: "#1b3a5c", fontSize: "0.95rem", padding: "8px 16px" }}>{formatHours(grandHours, grandMinutes)}</Badge>
+              </>
           ) : (
-            <>
-              <Table className="mb-0" hover>
-                <thead style={{ backgroundColor: "#f3f4f6" }}>
-                  <tr>
-                    <th
-                      style={{
-                        color: "#6b7280",
-                        fontWeight: 600,
-                        fontSize: "0.8rem",
-                        border: "none",
-                        padding: "10px 16px",
-                      }}
-                    >
-                      STUDENT
-                    </th>
-                    <th
-                      className="text-center"
-                      style={{
-                        color: "#6b7280",
-                        fontWeight: 600,
-                        fontSize: "0.8rem",
-                        border: "none",
-                        padding: "10px 16px",
-                      }}
-                    >
-                      JOBS
-                    </th>
-                    <th
-                      className="text-end"
-                      style={{
-                        color: "#6b7280",
-                        fontWeight: 600,
-                        fontSize: "0.8rem",
-                        border: "none",
-                        padding: "10px 16px",
-                      }}
-                    >
-                      TOTAL HRS
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {students.map((s) => (
-                    <tr
-                      key={s.uid}
-                      style={{ cursor: "pointer" }}
-                      onClick={() => handleStudentClick(s)}
-                    >
-                      <td
-                        style={{
-                          color: "#1b3a5c",
-                          fontWeight: 600,
-                          padding: "12px 16px",
-                          borderColor: "#e5e7eb",
-                        }}
-                      >
-                        {s.name}
-                        <span
-                          style={{
-                            color: "#9ca3af",
-                            fontSize: "0.75rem",
-                            marginLeft: 6,
-                          }}
-                        >
-                          tap to view jobs ›
-                        </span>
-                      </td>
-                      <td
-                        className="text-center"
-                        style={{
-                          color: "#6b7280",
-                          padding: "12px 16px",
-                          borderColor: "#e5e7eb",
-                        }}
-                      >
-                        {s.jobCount}
-                      </td>
-                      <td
-                        className="text-end"
-                        style={{
-                          color: "#374151",
-                          padding: "12px 16px",
-                          borderColor: "#e5e7eb",
-                        }}
-                      >
-                        {formatHours(s.hours, s.minutes)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-
-              <div
-                className="d-flex justify-content-between align-items-center px-3 py-3"
-                style={{
-                  backgroundColor: "#eff6ff",
-                  borderTop: "2px solid #bfdbfe",
-                }}
-              >
-                <span className="fw-bold" style={{ color: "#1b3a5c" }}>
-                  Grand Total ({students.length} students)
-                </span>
-                <Badge
-                  style={{
-                    backgroundColor: "#1b3a5c",
-                    fontSize: "0.85rem",
-                    padding: "6px 12px",
-                  }}
-                >
-                  {formatHours(grandHours, grandMinutes)}
-                </Badge>
-              </div>
-            </>
-          ))}
-
-        {/* ── Student job detail view ── */}
-        {selectedStudent &&
-          (jobsLoading ? (
-            <div className="d-flex justify-content-center align-items-center py-5">
-              <Spinner animation="border" style={{ color: "#1b3a5c" }} />
-            </div>
-          ) : jobs.length === 0 ? (
-            <p className="text-muted text-center py-4 mb-0">No jobs found.</p>
-          ) : (
-            <>
-              <Table className="mb-0" hover>
-                <thead style={{ backgroundColor: "#f3f4f6" }}>
-                  <tr>
-                    <th
-                      style={{
-                        color: "#6b7280",
-                        fontWeight: 600,
-                        fontSize: "0.8rem",
-                        border: "none",
-                        padding: "10px 16px",
-                      }}
-                    >
-                      JOB
-                    </th>
-                    <th
-                      className="text-end"
-                      style={{
-                        color: "#6b7280",
-                        fontWeight: 600,
-                        fontSize: "0.8rem",
-                        border: "none",
-                        padding: "10px 16px",
-                      }}
-                    >
-                      HOURS
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {jobs.map((job, i) => (
-                    <tr key={i}>
-                      <td
-                        style={{
-                          color: "#1b3a5c",
-                          fontWeight: 600,
-                          padding: "12px 16px",
-                          borderColor: "#e5e7eb",
-                        }}
-                      >
-                        {job.jobName}
-                      </td>
-                      <td
-                        className="text-end"
-                        style={{
-                          color: "#374151",
-                          padding: "12px 16px",
-                          borderColor: "#e5e7eb",
-                        }}
-                      >
-                        {formatHours(job.hours ?? 0, job.minutes ?? 0)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-
-              <div
-                className="d-flex justify-content-between align-items-center px-3 py-3"
-                style={{
-                  backgroundColor: "#eff6ff",
-                  borderTop: "2px solid #bfdbfe",
-                }}
-              >
-                <span className="fw-bold" style={{ color: "#1b3a5c" }}>
-                  Total
-                </span>
-                <Badge
-                  style={{
-                    backgroundColor: "#1b3a5c",
-                    fontSize: "0.85rem",
-                    padding: "6px 12px",
-                  }}
-                >
-                  {formatHours(studentTotalHours, studentTotalMinutes)}
-                </Badge>
-              </div>
-            </>
-          ))}
-      </Modal.Body>
-    </Modal>
+              <>
+                <span className="fw-bold" style={{ color: "#1b3a5c", fontSize: "1.1rem" }}>Total</span>
+                <Badge style={{ backgroundColor: "#1b3a5c", fontSize: "0.95rem", padding: "8px 16px" }}>{formatHours(studentTotalHours, studentTotalMinutes)}</Badge>
+              </>
+          )}
+        </div>
+      </Card>
   );
 }
 
@@ -561,7 +338,6 @@ export default function PayPeriod({ user }) {
   const [periods, setPeriods] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState(null);
-  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     async function fetchPayPeriods() {
@@ -578,7 +354,6 @@ export default function PayPeriod({ user }) {
           setPeriods(fetched);
           setSelectedPeriod(fetched[0]);
         }
-        console.log("Fetched pay periods:", fetched);
       } catch (error) {
         console.error("Error fetching pay periods:", error);
       } finally {
@@ -590,108 +365,90 @@ export default function PayPeriod({ user }) {
 
   if (loading) {
     return (
-      <div
-        className="d-flex flex-column align-items-center justify-content-center gap-3"
-        style={{ minHeight: "60vh" }}
-      >
-        <p className="text-muted mb-0" style={{ fontSize: "0.9rem" }}>
-          Loading pay periods…
-        </p>
-      </div>
+        <div className="d-flex align-items-center justify-content-center" style={{ minHeight: "60vh" }}>
+          <Spinner animation="border" style={{ color: "#1b3a5c" }} />
+        </div>
     );
   }
 
   if (!periods.length) {
     return (
-      <div
-        className="d-flex align-items-center justify-content-center"
-        style={{ minHeight: "60vh" }}
-      >
-        <p className="text-muted">No pay periods found.</p>
-      </div>
+        <div className="d-flex align-items-center justify-content-center" style={{ minHeight: "60vh" }}>
+          <p className="text-muted">No pay periods found.</p>
+        </div>
     );
   }
 
+  const currentPeriod = periods[0];
+
   return (
-    <>
-      <div
-        className="d-flex flex-column align-items-center w-100"
-        style={{ maxWidth: 480, margin: "0 auto", paddingBottom: 40 }}
-      >
-        <div className="w-100 border-0 rounded-0 text-center mb-2">
-          <div className="py-4">
-            <p className="text-white mb-1" style={{ fontSize: "1.6rem" }}>
-              Current pay period
-            </p>
-            <h1
-              className="fw-bold mb-0"
-              style={{
-                color: "#1b3a5c",
-                fontSize: "clamp(1.15rem, 5vw, 1.6rem)",
-                letterSpacing: "-0.02em",
-              }}
-            >
-              {formatPeriodRange(selectedPeriod)}
-            </h1>
-          </div>
-        </div>
+      <Container className="py-4 py-md-5">
+        <Row className="mb-4">
+          <Col>
+            <h2 style={{ color: "var(--color-primary-blue-light)", fontWeight: "700", marginBottom: 20 }}>Payment Information</h2>
+            <div className="p-4 rounded-3 shadow-sm" style={{ backgroundColor: "var(--color-bg-card)", color: "white" }}>
+              <p className="mb-1 text-white-50" style={{ fontSize: "1rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px" }}>
+                Current Pay Period
+              </p>
+              <h2 className="fw-bold mb-0" style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)" }}>
+                {formatPeriodRange(currentPeriod)}
+              </h2>
+            </div>
+          </Col>
+        </Row>
 
-        <Card
-          className="w-100 border-0 rounded-0"
-          style={{ backgroundColor: "transparent" }}
-        >
-          <h2 className="text-center">Select a Pay Period</h2>
-          <Card.Body className="p-0">
-            {periods.map((p) => (
-              <button
-                key={p.id}
-                className="d-flex align-items-center justify-content-between w-100 my-2 px-3 py-3 border-0 text-start"
-                style={{
-                  backgroundColor:"#eff6ff",
-                  borderBottom: "1px solid #e5e7eb",
-                  cursor: "pointer",
-                  transition: "background-color 0.15s ease",
-                }}
-                onClick={() => {
-                  setSelectedPeriod(p);
-                  setShowModal(true);
-                }}
-              >
-                <span
-                  className="fw-semibold"
-                  style={{ color: "#1b3a5c", fontSize: "1rem" }}
-                >
-                  {formatPeriodRange(p)}
-                </span>
-                <span
-                  style={{
-                    color: "#9ca3af",
-                    fontSize: "1.4rem",
-                    lineHeight: 1,
-                  }}
-                >
-                  ›
-                </span>
-              </button>
-            ))}
-          </Card.Body>
-        </Card>
-      </div>
+        <Row className="gy-4" style={{ height: 'calc(100vh - 350px)', minHeight: '500px'}}>
 
-      {(user?.role === "staff" || user?.role === "admin")? (
-        <StaffModal
-          show={showModal}
-          onHide={() => setShowModal(false)}
-          period={selectedPeriod}
-        />
-      ) : (
-        <StudentModal
-          show={showModal}
-          onHide={() => setShowModal(false)}
-          period={selectedPeriod}
-          user={user}
-        />
-      )}
-    </>
+          {/* Left Column: Period Selection List */}
+          {/* Removed overflow from the Column; handled inside the Card instead */}
+          <Col md={4} lg={3} className="h-100" style={{ overflow: 'hidden' }}>
+            <Card className="border-0 shadow-sm rounded-3 h-100" style={{ backgroundColor: "var(--color-bg-card)", display: "flex", flexDirection: "column" }}>
+              <Card.Header className="bg-white border-bottom py-3">
+                <h6 className="mb-0 fw-bold" style={{ color: "#1b3a5c" }}>Pay Periods</h6>
+              </Card.Header>
+
+              {/* Scrollable List Zone */}
+              <div className="list-group list-group-flush rounded-bottom" style={{ overflowY: 'auto', flexGrow: 1 }}>
+                {periods.map((p) => {
+                  const isSelected = selectedPeriod?.id === p.id;
+                  return (
+                      <button
+                          key={p.id}
+                          className="list-group-item list-group-item-action border-0 d-flex justify-content-between align-items-center px-4 py-3"
+                          style={{
+                            backgroundColor: isSelected ? "#eff6ff" : "white",
+                            borderLeft: isSelected ? "4px solid #1b3a5c" : "4px solid transparent",
+                            cursor: "pointer",
+                            transition: "all 0.2s ease"
+                          }}
+                          onClick={() => setSelectedPeriod(p)}
+                      >
+                    <span className="fw-semibold" style={{ color: isSelected ? "#1b3a5c" : "#4b5563", fontSize: "0.95rem" }}>
+                      {formatPeriodRange(p)}
+                    </span>
+                        <span style={{ color: isSelected ? "#1b3a5c" : "#9ca3af", fontSize: "1.2rem", lineHeight: 1 }}>
+                      ›
+                    </span>
+                      </button>
+                  );
+                })}
+              </div>
+            </Card>
+          </Col>
+
+          {/* Right Column: Period Details */}
+          {/* Removed overflow from the Column; handled strictly by the Child Component */}
+          <Col md={8} lg={9} className="h-100" style={{ overflow: 'hidden' }}>
+            {selectedPeriod && (
+                (user?.role === "staff" || user?.role === "admin") ? (
+                    <StaffPeriodDetails period={selectedPeriod} />
+                ) : (
+                    <StudentPeriodDetails period={selectedPeriod} user={user} />
+                )
+            )}
+          </Col>
+
+        </Row>
+      </Container>
   );
 }
