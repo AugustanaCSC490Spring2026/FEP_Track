@@ -19,6 +19,7 @@ export default function EventCard({
   onManage,
   status,
   onConfirm,
+  onViewCompletedDetails,
 }) {
   const filled = event?.students?.length ?? 0;
   const location = useLocation();
@@ -204,9 +205,19 @@ export default function EventCard({
                       </Button>
                   )}
 
-                  {status === "Completed" && (
-                      <Badge bg="secondary" className="w-100">Archived & Verified</Badge>
-                  )}
+                {status === "Completed" && (
+                    <div className="w-100 text-center">
+                        <Badge bg="secondary" className="w-100 mb-2">Archived & Verified</Badge>
+                        <Button
+                            variant="primary"
+                            size="sm"
+                            className="w-100 text-white"
+                            onClick={() => onViewCompletedDetails(event)}
+                        >
+                            View Shift Details
+                        </Button>
+                    </div>
+                )}
               </div>
           )}
 
