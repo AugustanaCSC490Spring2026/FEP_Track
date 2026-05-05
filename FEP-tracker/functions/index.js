@@ -3,8 +3,10 @@ const { exchangeGoogleCode, refreshGoogleToken } = require("./google_calendar");
 
 const { moveTimedOutEventsToPending } = require("./pending_events");
 const { periodCreated, periodUpdated } = require("./period_functions");
-const { sendJobEmail } = require("./send_email");
 const { setGlobalOptions } = require("firebase-functions");
+// const { sendJobEmail } = require("./new_job_email");
+// const { sendSpotOpenedEmail } = require("./spot_opened_email");
+// const { sendCalendarInvite } = require("./send_calendar_invite");
 
 
 initializeApp();
@@ -15,4 +17,3 @@ exports.periodCreated = periodCreated;
 exports.periodUpdated = periodUpdated;
 exports.exchangeGoogleCode = exchangeGoogleCode;
 exports.refreshGoogleToken = refreshGoogleToken;
-exports.sendJobEmail = sendJobEmail;
