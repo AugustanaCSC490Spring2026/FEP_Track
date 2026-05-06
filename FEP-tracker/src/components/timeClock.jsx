@@ -2,6 +2,30 @@ import { useState, useEffect, useCallback } from "react";
 import { database } from "../firebase-config";
 import { doc, updateDoc } from "firebase/firestore";
 
+const getTotalBreakSeconds = (entries) => {
+  let total = 0;
+  let breakStart = null;
+
+  for (const entry of entries) {
+    if (entry.type === "break-start") {
+      breakStart = entry.time;
+    } else if (entry.type === "break-end" && breakStart) {
+      total += new Date(entry.time) - new Date(breakStart);
+      breakStart = null;
+    }
+  }
+
+  if (breakStart) total += Date.now() - new Date(breakStart);
+
+  return total / 1000; // return in seconds
+};
+
+const parseDate = (date) => {
+  if (date?.toDate) return date.toDate();
+  const [year, month, day] = date.split("-").map(Number);
+  return new Date(year, month - 1, day); // local midnight, since the times in the firestore is in a diffrent timezone and we only care about the date part we can just parse it as local time to avoid timezone issues
+};
+
 function TimeClockModal({ user, jobs = [] }) {
   const [open, setOpen] = useState(false);
   const [time, setTime] = useState(new Date());
@@ -46,8 +70,7 @@ function TimeClockModal({ user, jobs = [] }) {
   useEffect(() => {
     const last = [...log]
       .reverse()
-      .find((e) => e?.type === "IN" || e?.type === "OUT");//since before even a break can start the user has to be clocked in we can just check for the last clock in entry to get the job info for the break entries
-    
+      .find((e) => e?.type === "IN" || e?.type === "OUT"); //since before even a break can start the user has to be clocked in we can just check for the last clock in entry to get the job info for the break entries
 
     setLastClockEntry(last ?? null);
     setIsClockedIn(last?.type === "IN");
@@ -68,7 +91,6 @@ function TimeClockModal({ user, jobs = [] }) {
       jobTitle: lastClockEntry?.jobTitle,
     };
 
-    
     setOnBreak(!endingBreak);
     setLog((prev) => {
       const updated = [...prev, entry];
@@ -84,30 +106,6 @@ function TimeClockModal({ user, jobs = [] }) {
       return updated;
     });
   }, [onBreak, lastClockEntry, user]);
-
-  const getTotalBreakSeconds = (entries) => {
-    let total = 0;
-    let breakStart = null;
-
-    for (const entry of entries) {
-      if (entry.type === "break-start") {
-        breakStart = entry.time;
-      } else if (entry.type === "break-end" && breakStart) {
-        total += new Date(entry.time) - new Date(breakStart);
-        breakStart = null;
-      }
-    }
-
-    if (breakStart) total += Date.now() - new Date(breakStart);
-
-    return total / 1000; // return in seconds
-  };
-
-  const parseDate = (date) => {
-    if (date?.toDate) return date.toDate();
-    const [year, month, day] = date.split("-").map(Number);
-    return new Date(year, month - 1, day); // local midnight, since the times in the firestore is in a diffrent timezone and we only care about the date part we can just parse it as local time to avoid timezone issues
-  };
 
   const sortedJobs = [...jobs].sort((a, b) => {
     return parseDate(a.date) - parseDate(b.date);
@@ -196,7 +194,7 @@ function TimeClockModal({ user, jobs = [] }) {
     setLoading(true);
     try {
       await updateDoc(doc(database, "upcoming_events", lastClockEntry.jobId), {
-        [`attendance.${user.uid}.timeOut`]: new Date()
+        [`attendance.${user.uid}.timeOut`]: new Date(),
       });
       setLog((prev) => [
         ...prev,

@@ -60,23 +60,24 @@ const periodUpdated = onDocumentCreated(
     const snapshot = await db
       .collection("periods")
       .where("startdate", "<=", eventData.date)
+      .where("enddate", ">=", eventData.date)
       .get();
 
     if (snapshot.empty) {
       console.log(`No period found for date: ${eventData.date}`);
       return;
     }
-    const filtered = snapshot.docs.filter((doc) => {
+  /*   const filtered = snapshot.docs.filter((doc) => {
       const { startdate, enddate } = doc.data();
       return startdate <= eventData.date && enddate >= eventData.date;
-    });
+    }); */
 
-    if (filtered.length === 0) {
+   /*  if (filtered.length === 0) {
       console.log(`No period found that includes date: ${eventData.date}`);
       return;
-    }
+    } */
 
-    const doc = filtered[0];
+    const doc = snapshot.docs[0];
     const period = new Period({ id: doc.id, ...doc.data() });
 
     period.setAttendance(eventId, eventData?.attendance);

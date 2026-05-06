@@ -1,16 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { database } from "../firebase-config";
+import JobForms from "../components/Jobform";
 import {
   collection,
   addDoc,
   query,
-  // eslint-disable-next-line no-unused-vars
-  where,
   getDocs,
   deleteDoc,
   doc,
-  updateDoc,
-  orderBy,
   getDoc,
 } from "firebase/firestore";
 /* ------- */
@@ -23,46 +20,30 @@ import Row from "react-bootstrap/Row";
 import Modal from "react-bootstrap/Modal";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import JobManagementModal from "../components/JobManagementModal";
-import Select from 'react-select';
+import Select from "react-select";
 
 function Dashboard({ user }) {
-  const [validated, setValidated] = useState(false);
-  const [showForm, setShowForm] = useState(false);
+  const [isJobFormOpen, setisJobFormOpen] = useState(false);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [editingEvent, setEditingEvent] = useState(null);
-
-  const [title, setTitle] = useState("");
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
-  const [supervisor, setSupervisor] = useState("");
-  const [location, setLocation] = useState("");
-  const [extraInfo, setExtraInfo] = useState("");
-  const [studentCap, setStudentCap] = useState(999);
-  const [date, setDate] = useState("");
-  const [students, setStudents] = useState([]);
-  const [filter, setFilter] = useState("All");
+  /* const [filter, setFilter] = useState("All"); */
   const [searchTitle, setSearchTitle] = useState("");
   const [filterBuilding, setFilterBuilding] = useState("All");
   const [filterSupervisor, setFilterSupervisor] = useState("All");
   const [filterAvailability, setFilterAvailability] = useState("All");
   const [filterDepartment, setFilterDepartment] = useState("All");
   const [filterPending, setFilterPending] = useState("All");
-
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmingEvent, setConfirmingEvent] = useState(null);
   const [confirmingStudents, setConfirmingStudents] = useState({});
   const [selectedStudentDetails, setSelectedStudentDetails] = useState(null);
-
   const [currentTab, setCurrentTab] = useState("Upcoming");
-
   const [showManageModal, setShowManageModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
-  const [departmentList, setDepartmentList] = useState([]);
-  const [selectedDept, setSelectedDept] = useState(null);
+  const [editingEvent, setEditingEvent] = useState(null);
   const [showCompletedModal, setShowCompletedModal] = useState(false);
   const [completedEventDetails, setCompletedEventDetails] = useState(null);
-
+  const jobFormRef = useRef();
   const collectionMap = {
     Upcoming: "upcoming_events",
     "Pending Approval": "pending_events",
@@ -123,77 +104,7 @@ function Dashboard({ user }) {
 
   useEffect(() => {
     fetchEvents();
-
-    const fetchDepartments = async () => {
-      const querySnapshot = await getDocs(collection(database, "department_titles"));
-      const depts = querySnapshot.docs.map(doc => ({
-        value: doc.data().title,
-        label: doc.data().title
-      }));
-      setDepartmentList(depts.sort((a, b) => a.label.localeCompare(b.label)));
-    };
-    fetchDepartments();
   }, [currentTab]);
-
-  const resetForm = () => {
-    setTitle("");
-    setStartTime("");
-    setEndTime("");
-    setSupervisor(user.displayName);
-    setLocation("");
-    setSelectedDept(null);
-    setExtraInfo("");
-    setStudentCap(1);
-    setDate("");
-    setValidated(false);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const form = e.currentTarget;
-    if (!form.checkValidity() || !selectedDept) {
-      e.stopPropagation();
-      setValidated(true);
-
-      return;
-    }
-    const eventData = {
-      title,
-      startTime,
-      endTime,
-      time: `${startTime} – ${endTime}`,
-      supervisor: supervisor || user.displayName,
-      extra_details: extraInfo || "TBD",
-      createdBy: user.displayName,
-      createdByID: user,
-      location: location || "TBD",
-      department: selectedDept.value,
-      student_cap: studentCap,
-      date: date || "TBD",
-      students,
-      createdAt: new Date(),
-    };
-
-    try {
-      if (editingEvent) {
-        await updateDoc(doc(database, "upcoming_events", editingEvent.id), eventData);
-      } else {
-        await addDoc(collection(database, "upcoming_events"), eventData);
-      }
-
-      await fetchEvents();
-
-      resetForm();
-      setEditingEvent(null);
-      setShowForm(false);
-    } catch (err) {
-      console.error("Save failed", err);
-    }
-
-    resetForm();
-    setEditingEvent(null);
-    setShowForm(false);
-  };
 
   const deleteEvent = async (id) => {
     if (window.confirm("Are you sure you want to delete this job?")) {
@@ -201,26 +112,6 @@ function Dashboard({ user }) {
       setEvents((prev) => prev.filter((e) => e.id !== id));
       setSelectedEvent(null);
     }
-  };
-
-  const handleEditEvent = (event) => {
-    setEditingEvent(event);
-    setStudents(event.students || []);
-    setTitle(event.title);
-    setLocation(event.location);
-    setSupervisor(event.supervisor);
-    setDate(event.date);
-    setStudentCap(event.student_cap);
-    setExtraInfo(event.extra_details);
-    setStartTime(event.startTime);
-    setEndTime(event.endTime);
-    if (event.department) {
-      setSelectedDept({ value: event.department, label: event.department });
-    } else {
-      setSelectedDept(null);
-    }
-
-    setShowForm(true);
   };
 
   const filteredEvents = events.filter((event) => {
@@ -232,7 +123,7 @@ function Dashboard({ user }) {
     const matchesSupervisor =
       filterSupervisor === "All" || event.supervisor === filterSupervisor;
     const matchesDepartment =
-        filterDepartment === "All" || event.department === filterDepartment;
+      filterDepartment === "All" || event.department === filterDepartment;
     const studentCount = event.students?.length || 0;
     const isFull = studentCount >= event.student_cap;
 
@@ -241,11 +132,12 @@ function Dashboard({ user }) {
       (filterAvailability === "Full" && isFull) ||
       (filterAvailability === "Available" && !isFull);
 
-    const hasPending = event.pending_students && event.pending_students.length > 0;
+    const hasPending =
+      event.pending_students && event.pending_students.length > 0;
     const matchesPending =
-        filterPending === "All" ||
-        (filterPending === "Has Pending" && hasPending) ||
-        (filterPending === "No Pending" && !hasPending);
+      filterPending === "All" ||
+      (filterPending === "Has Pending" && hasPending) ||
+      (filterPending === "No Pending" && !hasPending);
 
     return (
       matchesTitle &&
@@ -272,17 +164,25 @@ function Dashboard({ user }) {
 
       if (studentAttendance) {
         const studentTimeIn = formatFirebaseTime(studentAttendance.timeIn);
-        const studentTimeOut = studentAttendance.timeOut ? formatFirebaseTime(studentAttendance.timeOut) : "--:--:--";
-        const checkTimeOut =  studentTimeOut !== "--:--:--" ? studentTimeOut : event.endTime;
-        const timeDifference = calculateTimeDifference(studentTimeIn, checkTimeOut);
+        const studentTimeOut = studentAttendance.timeOut
+          ? formatFirebaseTime(studentAttendance.timeOut)
+          : "--:--:--";
+        const checkTimeOut =
+          studentTimeOut !== "--:--:--" ? studentTimeOut : event.endTime;
+        const timeDifference = calculateTimeDifference(
+          studentTimeIn,
+          checkTimeOut,
+        );
         const breakSeconds = studentAttendance.breakSeconds || 0;
         const breakMinsRounded = Math.round(breakSeconds / 60);
-        const clockedInTotalMins = (timeDifference.hours * 60) + timeDifference.minutes;
-        const totalWorkedMins = Math.max(0, clockedInTotalMins - breakMinsRounded);
+        const clockedInTotalMins =
+          timeDifference.hours * 60 + timeDifference.minutes;
+        const totalWorkedMins = Math.max(
+          0,
+          clockedInTotalMins - breakMinsRounded,
+        );
         const finalHours = Math.floor(totalWorkedMins / 60);
         const finalMinutes = totalWorkedMins % 60;
-        
-        
 
         initializedStudents[studentId] = {
           id: studentId,
@@ -415,7 +315,7 @@ function Dashboard({ user }) {
 
   const StudentName = ({ studentId, db }) => {
     const [name, setName] = useState("Loading...");
-    console.log("StudentID:" + studentId);
+  
     useEffect(() => {
       const fetchName = async () => {
         if (!studentId) return;
@@ -489,15 +389,18 @@ function Dashboard({ user }) {
             </div>
 
             <Button
-              variant={showForm ? "outline-secondary" : "primary"}
-              className="w-100 py-2 mb-3 shadow-sm"
+              variant={isJobFormOpen ? "outline-secondary" : "primary"}
               onClick={() => {
-                setEditingEvent(null);
-                setShowForm(!showForm);
-                resetForm();
+                if (isJobFormOpen) {
+                  jobFormRef.current.closeForm();
+                } else {
+                  setEditingEvent(null);
+                  jobFormRef.current.resetForm();
+                  jobFormRef.current.openForm();
+                }
               }}
             >
-              {showForm ? "✕ Cancel" : "+ Create New Job"}
+              {isJobFormOpen ? "✕ Cancel" : "+ Create New Job"}
             </Button>
 
             {/* Filter Box */}
@@ -562,32 +465,34 @@ function Dashboard({ user }) {
                 {/* Filter Department */}
                 <Form.Group className="mb-3">
                   <Form.Label
-                      className="small text-uppercase"
-                      style={{
-                        color: "var(--color-text-secondary)",
-                        fontSize: "0.7rem",
-                      }}
+                    className="small text-uppercase"
+                    style={{
+                      color: "var(--color-text-secondary)",
+                      fontSize: "0.7rem",
+                    }}
                   >
                     Department
                   </Form.Label>
                   <Form.Select
-                      size="sm"
-                      value={filterDepartment}
-                      onChange={(e) => setFilterDepartment(e.target.value)}
-                      style={{
-                        backgroundColor: "var(--color-bg-card)",
-                        color: "white",
-                        border: "1px solid #475569",
-                      }}
+                    size="sm"
+                    value={filterDepartment}
+                    onChange={(e) => setFilterDepartment(e.target.value)}
+                    style={{
+                      backgroundColor: "var(--color-bg-card)",
+                      color: "white",
+                      border: "1px solid #475569",
+                    }}
                   >
                     <option value="All">All Departments</option>
-                    {[...new Set(events.map((e) => e.department).filter(Boolean))].map(
-                        (dept) => (
-                            <option key={dept} value={dept}>
-                              {dept}
-                            </option>
-                        ),
-                    )}
+                    {[
+                      ...new Set(
+                        events.map((e) => e.department).filter(Boolean),
+                      ),
+                    ].map((dept) => (
+                      <option key={dept} value={dept}>
+                        {dept}
+                      </option>
+                    ))}
                   </Form.Select>
                 </Form.Group>
 
@@ -626,29 +531,29 @@ function Dashboard({ user }) {
                 {/* Building Filter */}
                 <Form.Group className="mb-3">
                   <Form.Label
-                      className="small text-uppercase"
-                      style={{
-                        color: "var(--color-text-secondary)",
-                        fontSize: "0.7rem",
-                      }}
+                    className="small text-uppercase"
+                    style={{
+                      color: "var(--color-text-secondary)",
+                      fontSize: "0.7rem",
+                    }}
                   >
                     Location
                   </Form.Label>
                   <Form.Select
-                      size="sm"
-                      value={filterBuilding}
-                      onChange={(e) => setFilterBuilding(e.target.value)}
-                      style={{
-                        backgroundColor: "var(--color-bg-card)",
-                        color: "white",
-                        border: "1px solid #475569",
-                      }}
+                    size="sm"
+                    value={filterBuilding}
+                    onChange={(e) => setFilterBuilding(e.target.value)}
+                    style={{
+                      backgroundColor: "var(--color-bg-card)",
+                      color: "white",
+                      border: "1px solid #475569",
+                    }}
                   >
                     <option value="All">All Locations</option>
                     {[...new Set(events.map((e) => e.location))].map((loc) => (
-                        <option key={loc} value={loc}>
-                          {loc}
-                        </option>
+                      <option key={loc} value={loc}>
+                        {loc}
+                      </option>
                     ))}
                   </Form.Select>
                 </Form.Group>
@@ -686,29 +591,29 @@ function Dashboard({ user }) {
                 {/* Pending Applications Toggle */}
                 <Form.Group className="mb-3">
                   <Form.Label
-                      className="small text-uppercase"
-                      style={{
-                        color: "var(--color-text-secondary)",
-                        fontSize: "0.7rem",
-                      }}
+                    className="small text-uppercase"
+                    style={{
+                      color: "var(--color-text-secondary)",
+                      fontSize: "0.7rem",
+                    }}
                   >
                     Pending Applications
                   </Form.Label>
                   <div className="d-flex gap-2">
                     {["All", "Has Pending", "No Pending"].map((status) => (
-                        <Button
-                            key={status}
-                            size="sm"
-                            variant={
-                              filterPending === status
-                                  ? "primary"
-                                  : "outline-secondary"
-                            }
-                            onClick={() => setFilterPending(status)}
-                            style={{ fontSize: "0.7rem", flex: 1 }}
-                        >
-                          {status}
-                        </Button>
+                      <Button
+                        key={status}
+                        size="sm"
+                        variant={
+                          filterPending === status
+                            ? "primary"
+                            : "outline-secondary"
+                        }
+                        onClick={() => setFilterPending(status)}
+                        style={{ fontSize: "0.7rem", flex: 1 }}
+                      >
+                        {status}
+                      </Button>
                     ))}
                   </div>
                 </Form.Group>
@@ -759,7 +664,7 @@ function Dashboard({ user }) {
                     event={event}
                     status={currentTab} // Pass "Upcoming", "Pending Approval", or "Completed"
                     onConfirm={handleOpenConfirmModal}
-                    onEdit={handleEditEvent}
+                    onEdit={() => jobFormRef.current.handleEditEvent(event)}
                     onManage={handleOpenManage}
                     onRefresh={fetchEvents}
                     onCallBack={deleteEvent}
@@ -772,97 +677,21 @@ function Dashboard({ user }) {
           )}
         </Col>
       </Row>
-
-      <Modal
-        show={showForm}
-        onHide={() => setShowForm(false)}
-        centered
-        size="lg"
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>{editingEvent ? "Edit Event" : "New Event"}</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form noValidate validated={validated} onSubmit={handleSubmit}>
-            <Row className="mb-3">
-              <Form.Group as={Col} md="6">
-                <Form.Label>Job Title</Form.Label>
-                <Form.Control required type="text" value={title} onChange={(e) => setTitle(e.target.value)} />
-              </Form.Group>
-              <Form.Group as={Col} md="3">
-                <Form.Label>Start Time</Form.Label>
-                <Form.Control required type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
-              </Form.Group>
-              <Form.Group as={Col} md="3">
-                <Form.Label>End Time</Form.Label>
-                <Form.Control required type="time" min={startTime} value={endTime} onChange={(e) => setEndTime(e.target.value)} />
-              </Form.Group>
-            </Row>
-            <Row className="mb-3">
-              <Form.Group as={Col} md="6">
-                <Form.Label>Supervisor</Form.Label>
-                <Form.Control required type="text" value={supervisor} onChange={(e) => setSupervisor(e.target.value)} />
-              </Form.Group>
-              <Form.Group as={Col} md="6">
-                <Form.Label>Location</Form.Label>
-                <Form.Control required type="text" value={location} onChange={(e) => setLocation(e.target.value)} />
-              </Form.Group>
-            </Row>
-            <Form.Group as={Col} md="12" className="mb-3">
-              <Form.Label>Department</Form.Label>
-              <Select
-                  options={departmentList}
-                  value={selectedDept}
-                  onChange={(selectedOption) => setSelectedDept(selectedOption)}
-                  placeholder="Select Department..."
-                  isSearchable={true}
-                  styles={{
-                    control: (base, state) => ({
-                      ...base,
-                      borderColor: (validated && !selectedDept)
-                          ? "#dc3545"
-                          : (validated && selectedDept)
-                              ? "#198754"
-                              : base.borderColor,
-                      boxShadow: state.isFocused
-                          ? (validated && selectedDept ? "0 0 0 0.25rem rgba(25, 135, 84, 0.25)" : base.boxShadow)
-                          : "none",
-                      '&:hover': {
-                        borderColor: (validated && !selectedDept)
-                            ? "#dc3545"
-                            : (validated && selectedDept)
-                                ? "#198754"
-                                : base.borderColor,
-                      }
-                    })
-                  }}
-              />
-            </Form.Group>
-            <Row className="mb-3">
-              <Form.Group as={Col} md="6">
-                <Form.Label>Date</Form.Label>
-                <Form.Control required type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-              </Form.Group>
-              <Form.Group as={Col} md="6">
-                <Form.Label>Student Capacity</Form.Label>
-                <Form.Control required type="number" min={1} value={studentCap} onChange={(e) => setStudentCap(e.target.value)} />
-              </Form.Group>
-            </Row>
-            <Form.Group className="mb-3">
-              <Form.Label>Extra Information</Form.Label>
-              <Form.Control as="textarea" rows={2} value={extraInfo} onChange={(e) => setExtraInfo(e.target.value)} />
-            </Form.Group>
-            <Button type="submit" variant="success">{editingEvent ? "Update Job" : "Create Job"}</Button>
-          </Form>
-        </Modal.Body>
-      </Modal>
+      <JobForms
+        ref={jobFormRef}
+        onOpenChange={setisJobFormOpen}
+        user={user}
+        fetchEvents={fetchEvents}
+        editingEvent={editingEvent}
+        setEditingEvent={setEditingEvent}
+      />
 
       <Modal
         show={showConfirmModal}
-        onHide={() =>{
+        onHide={() => {
           setShowConfirmModal(false);
           setSelectedStudentDetails(null);
-      }}
+        }}
         centered
       >
         <Modal.Header closeButton>
@@ -929,10 +758,10 @@ function Dashboard({ user }) {
                       />
                       <span className="text-muted small">mins</span>
                       <Button
-                          variant="outline-secondary"
-                          size="sm"
-                          className="ms-3"
-                          onClick={() => setSelectedStudentDetails(student.id)}
+                        variant="outline-secondary"
+                        size="sm"
+                        className="ms-3"
+                        onClick={() => setSelectedStudentDetails(student.id)}
                       >
                         Details
                       </Button>
@@ -959,57 +788,80 @@ function Dashboard({ user }) {
         </Modal.Footer>
 
         {/* Shift Details Side Pop-up */}
-        {selectedStudentDetails && confirmingStudents[selectedStudentDetails] && (() => {
-          const student = confirmingStudents[selectedStudentDetails];
+        {selectedStudentDetails &&
+          confirmingStudents[selectedStudentDetails] &&
+          (() => {
+            const student = confirmingStudents[selectedStudentDetails];
 
-          const clockedInDiff = calculateTimeDifference(student.timeIn, student.timeOut);
-          const clockedInTotalMins = (clockedInDiff.hours * 60) + clockedInDiff.minutes;
+            const clockedInDiff = calculateTimeDifference(
+              student.timeIn,
+              student.timeOut,
+            );
+            const clockedInTotalMins =
+              clockedInDiff.hours * 60 + clockedInDiff.minutes;
 
-          const breakSecs = student.breakTime || 0;
-          const totalBreakSeconds = Math.round(breakSecs);
-          const displayBreakMins = Math.floor(totalBreakSeconds / 60);
-          const displayBreakSecs = totalBreakSeconds % 60;
+            const breakSecs = student.breakTime || 0;
+            const totalBreakSeconds = Math.round(breakSecs);
+            const displayBreakMins = Math.floor(totalBreakSeconds / 60);
+            const displayBreakSecs = totalBreakSeconds % 60;
 
-          return (
+            return (
               <div
-                  style={{
-                    position: "fixed",
-                    top: "50%",
-                    left: "calc(50% + 265px)",
-                    transform: "translateY(-50%)",
-                    zIndex: 1060,
-                    width: "280px",
-                  }}
+                style={{
+                  position: "fixed",
+                  top: "50%",
+                  left: "calc(50% + 265px)",
+                  transform: "translateY(-50%)",
+                  zIndex: 1060,
+                  width: "280px",
+                }}
               >
                 <Card className="shadow-lg border-info">
                   <Card.Header className="bg-secondary text-white d-flex flex-column justify-content-between">
                     <div className="d-flex justify-content-between align-items-center w-100">
                       <strong>Shift Details</strong>
                       <Button
-                          variant="close"
-                          className="btn-close-white"
-                          onClick={() => setSelectedStudentDetails(null)}
+                        variant="close"
+                        className="btn-close-white"
+                        onClick={() => setSelectedStudentDetails(null)}
                       />
                     </div>
-                    <div style={{ fontSize: "1rem", opacity: 0.8, marginTop: "2px" }}>
+                    <div
+                      style={{
+                        fontSize: "1rem",
+                        opacity: 0.8,
+                        marginTop: "2px",
+                      }}
+                    >
                       <StudentName studentId={student.id} db={database} />
                     </div>
                   </Card.Header>
                   <Card.Body style={{ fontSize: "0.9rem" }}>
-                    <p className="mb-1"><strong>Time In:</strong> {formatTo12Hr(student.timeIn)}</p>
-                    <p className="mb-1"><strong>Time Out:</strong> {formatTo12Hr(student.timeOut)}</p>
+                    <p className="mb-1">
+                      <strong>Time In:</strong> {formatTo12Hr(student.timeIn)}
+                    </p>
+                    <p className="mb-1">
+                      <strong>Time Out:</strong> {formatTo12Hr(student.timeOut)}
+                    </p>
                     <hr className="my-2" />
-                    <p className="mb-1"><strong>Total Clocked In:</strong> {clockedInDiff.hours}h {clockedInDiff.minutes}m</p>
-                    <p className="mb-1"><strong>Break Taken:</strong> {displayBreakMins}m {displayBreakSecs}s</p>
+                    <p className="mb-1">
+                      <strong>Total Clocked In:</strong> {clockedInDiff.hours}h{" "}
+                      {clockedInDiff.minutes}m
+                    </p>
+                    <p className="mb-1">
+                      <strong>Break Taken:</strong> {displayBreakMins}m{" "}
+                      {displayBreakSecs}s
+                    </p>
                     <hr className="my-2" />
                     <p className="mb-0 text-success">
-                      <strong>Total Worked:</strong> {student.hours}h {student.minutes}m
+                      <strong>Total Worked:</strong> {student.hours}h{" "}
+                      {student.minutes}m
                     </p>
                   </Card.Body>
                 </Card>
               </div>
-          );
-        })()}
+            );
+          })()}
       </Modal>
 
       {/* Completed Shift Details Modal */}
@@ -1059,10 +911,10 @@ function Dashboard({ user }) {
       </Modal>
 
       <JobManagementModal
-          show={showManageModal}
-          onHide={() => setShowManageModal(false)}
-          event={selectedEvent}
-          onRefresh={fetchEvents}
+        show={showManageModal}
+        onHide={() => setShowManageModal(false)}
+        event={selectedEvent}
+        onRefresh={fetchEvents}
       />
     </div>
   );
