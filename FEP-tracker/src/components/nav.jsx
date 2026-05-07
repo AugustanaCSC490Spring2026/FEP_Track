@@ -24,27 +24,35 @@ const staffLinks = [
 export default function Navbar({ user }) {
   const [isOpen, setIsOpen] = useState(false);
   // if the user is staff add the staff link in the middle of the nav links otherwise just show the base links
+  
+
   const navLinks =
-    user?.role === "admin"
-      ? [...baseNavLinks.slice(0, 2), ...staffLinks, ...baseNavLinks.slice(2)]
-    //Do we want staff to be able to see the pay period page? 
-      : user?.role === "staff"
-      ? baseNavLinks.filter(link => link.href !== "/payperiod")
-      : baseNavLinks;
+  user?.role === "admin"
+    ? [...baseNavLinks.slice(0, 2), ...staffLinks, ...baseNavLinks.slice(2)]
+    : user?.role === "staff"
+    ? baseNavLinks.filter(link => link.href !== "/payperiod")
+    : baseNavLinks;
   return (
     <nav
       className="navbar navbar-expand-md navbar-dark bg-primary"
       role="navigation"
       aria-label="Main navigation"
     >
-      <div className="container">
-        {/* Logo */}
-        <a className="navbar-brand fw-bold" href="/">
-          {user ? `Welcome, ${user.displayName.split(" ")[0]}!` : "FEP Tracker"}
-        </a>
+      <div className="container position-relative">
+  {/* Title - centered on desktop */}
+  <span className="fw-bold fs-5 fs-lg-3 position-absolute start-50 translate-middle-x text-white d-none d-md-block">
+    Flexible Employment Program
+  </span>
 
-        {/* Hamburger button */}
-        <button
+  {/* Title - visible on mobile, hidden when menu is open */}
+  {!isOpen && (
+    <span className="fw-bold fs-6 text-white d-md-none mx-auto">
+      Flexible Employement Program
+    </span>
+  )}
+
+  {/* Hamburger button */}
+  <button
           className="navbar-toggler"
           type="button"
           onClick={() => setIsOpen(!isOpen)}
@@ -66,7 +74,7 @@ export default function Navbar({ user }) {
               <></>
             ) : (
               navLinks.map((link) => (
-                <li className="nav-item" key={link.href}>
+                <li className={`nav-item${link.href === "/reports" ? " d-none d-md-block" : ""}`} key={link.href}>
                   <a
                     href={link.href}
                     className="nav-link"

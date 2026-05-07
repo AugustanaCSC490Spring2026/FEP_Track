@@ -297,7 +297,10 @@ function Students({ user }) {
 
       {/* Buttons */}
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <Button variant="primary" onClick={() => fileInputRef.current && fileInputRef.current.click()}>
+        <Button size="sm" className="d-md-none" variant="primary" onClick={() => fileInputRef.current && fileInputRef.current.click()}>
+          Import CSV
+        </Button>
+        <Button size="default" className="d-none d-md-block" variant="primary" onClick={() => fileInputRef.current && fileInputRef.current.click()}>
           Import Many Students (CSV)
         </Button>
         <input
@@ -307,7 +310,10 @@ function Students({ user }) {
           style={{ display: "none" }}
           onChange={handleCSVUpload}
         />
-        <Button variant="primary" onClick={() => setShowForm(true)}>
+        <Button size="sm" className="d-md-none" variant="primary" onClick={() => setShowForm(true)}>
+          New User
+        </Button>
+        <Button size="default" className="d-none d-md-block" variant="primary" onClick={() => setShowForm(true)}>
           Create New User
         </Button>
       </div>
@@ -385,11 +391,11 @@ function Students({ user }) {
       {/* Scrollable Table */}
       <div style={{
         borderRadius: 12,
-        overflow: "hidden",
         border: "1px solid #e5e7eb",
         boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
         maxHeight: "60vh",
         overflowY: "auto",
+        overflowX: "auto",
       }}>
         <Table className="mb-0" style={{ fontSize: 14, minWidth: 700 }}>
           <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>

@@ -21,7 +21,6 @@ function Home({ user }) {
   const [prefLoaded, setPrefLoaded] = useState(false);
 
   useEffect(() =>{
- 
     const loadPref = async() =>{
       if(!user?.uid) return;
         const userRef = doc(database,"users",user.uid);
@@ -34,6 +33,7 @@ function Home({ user }) {
     };
     loadPref();
   }, [user])
+
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState(null);
 
@@ -53,35 +53,47 @@ function Home({ user }) {
   const [showManageModal, setShowManageModal] = useState(false);
   const [departmentList, setDepartmentList] = useState([]);
   const [selectedDept, setSelectedDept] = useState(null);
+  const [isListView, setIsListView] = useState(false);
 
   const [currentWeekStart, setCurrentWeekStart] = useState(
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
+
+  useEffect(() => {
+    const checkMobile = () => {
+      if (window.innerWidth < 768) {
+        setIsListView(true);
+      }
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   const START_HOUR = 6;
   const END_HOUR = 24;
   const HOUR_HEIGHT = 60;
 
   const GOOGLE_COLORS = {
-    "1": "#a4bdfc", // Lavender
-    "2": "#7ae7bf", // Sage
-    "3": "#dbadff", // Grape
-    "4": "#ff887c", // Flamingo
-    "5": "#fbd75b", // Banana
-    "6": "#ffb878", // Tangerine
-    "7": "#46d6db", // Peacock
-    "8": "#e1e1e1", // Graphite
-    "9": "#5484ed", // Blueberry
-    "10": "#51b886", // Basil
-    "11": "#dc2127", // Tomato
+    "1": "#a4bdfc",
+    "2": "#7ae7bf",
+    "3": "#dbadff",
+    "4": "#ff887c",
+    "5": "#fbd75b",
+    "6": "#ffb878",
+    "7": "#46d6db",
+    "8": "#e1e1e1",
+    "9": "#5484ed",
+    "10": "#51b886",
+    "11": "#dc2127",
   };
 
-  const DEFAULT_GOOGLE_COLOR = "#46d6db"; // Fallback gray
+  const DEFAULT_GOOGLE_COLOR = "#46d6db";
 
   const resetForm = () => {
     setTitle(""); setStartTime(""); setEndTime(""); setSupervisor(user.displayName);
     setLocation(""); setExtraInfo(""); setStudentCap(1); setDate("");
-        setSelectedDept(null);
+    setSelectedDept(null);
     setValidated(false);
   };
 
@@ -89,10 +101,9 @@ function Home({ user }) {
   const handleNextWeek = () => setCurrentWeekStart(prev => addWeeks(prev, 1));
   const handleToday = () => setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
 
-   const fetchEvents = async () => {
+  const fetchEvents = async () => {
     setLoading(true);
     try {
-      console.log("Fetching fresh events from Firestore...");
       const querySnapshot = await getDocs(collection(database, "upcoming_events"));
       const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
@@ -124,7 +135,7 @@ function Home({ user }) {
     fetchDepartments();
   }, [currentWeekStart]);
 
-const FUNCTIONS_BASE = "https://us-central1-fep-tracker.cloudfunctions.net";
+  const FUNCTIONS_BASE = "https://us-central1-fep-tracker.cloudfunctions.net";
 
   const getValidAccessToken = async (uid) => {
     const cachedToken = sessionStorage.getItem("google_access_token");
@@ -167,6 +178,7 @@ const FUNCTIONS_BASE = "https://us-central1-fep-tracker.cloudfunctions.net";
 
     window.location.href = authUrl.toString();
   };
+
   useEffect(() => {
     if (!showGoogleCalendar || !user) {
       setGoogleEvents([]);
@@ -236,7 +248,6 @@ const FUNCTIONS_BASE = "https://us-central1-fep-tracker.cloudfunctions.net";
 
   const handleEditEvent = (event) => {
     setEditingEvent(event);
-    
     setTitle(event.title);
     setLocation(event.location);
     setSupervisor(event.supervisor);
@@ -250,7 +261,7 @@ const FUNCTIONS_BASE = "https://us-central1-fep-tracker.cloudfunctions.net";
       setEndTime(end);
     }
 
-        if (event.department) {
+    if (event.department) {
       setSelectedDept({ value: event.department, label: event.department });
     } else {
       setSelectedDept(null);
@@ -259,6 +270,7 @@ const FUNCTIONS_BASE = "https://us-central1-fep-tracker.cloudfunctions.net";
     setSelectedEvent(null); 
     setShowForm(true);      
   };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const form = e.currentTarget;
@@ -293,7 +305,6 @@ const FUNCTIONS_BASE = "https://us-central1-fep-tracker.cloudfunctions.net";
     }
 
     await fetchEvents();
-
     resetForm();
     setEditingEvent(null);
     setShowForm(false);
@@ -331,7 +342,7 @@ const FUNCTIONS_BASE = "https://us-central1-fep-tracker.cloudfunctions.net";
       alert("Failed to apply. Please try again.");
     }
   };
-// event position logic
+
   const getEventPosition = (event) => {
     if (!event.time) return {};
     const [start, end] = event.time.split(" – ");
@@ -377,8 +388,7 @@ const FUNCTIONS_BASE = "https://us-central1-fep-tracker.cloudfunctions.net";
       const [year, month, dateNum] = e.date.split("-").map(Number);
       const eventDate = new Date(year, month - 1, dateNum);
       return format(eventDate, "yyyy-MM-dd") === formattedDay;
-    }).sort((a, b) => a.time.localeCompare(b.time));  
-
+    }).sort((a, b) => a.time.localeCompare(b.time));
 
     const jobElements = dayJobs.map((event, index) => {
       const pos = getEventPosition(event);
@@ -421,7 +431,7 @@ const FUNCTIONS_BASE = "https://us-central1-fep-tracker.cloudfunctions.net";
           }}
         >
           <strong>{event.title}</strong>
-          <div style={{ fontSize: "10px" }}>{timeFormat(event.startTime)} - {timeFormat(event.endTime)} </div>
+          <div style={{ fontSize: "10px" }}>{timeFormat(event.startTime)} - {timeFormat(event.endTime)}</div>
         </div>
       );
     });
@@ -500,7 +510,6 @@ const FUNCTIONS_BASE = "https://us-central1-fep-tracker.cloudfunctions.net";
     setShowManageModal(true);
   };
 
-// create event modal
   return (
     <div style={{ padding: "20px", height: "calc(100vh - 70px)", overflowY: "auto" }}>
       <Modal show={showForm} onHide={() => setShowForm(false)} centered size="lg">
@@ -536,31 +545,31 @@ const FUNCTIONS_BASE = "https://us-central1-fep-tracker.cloudfunctions.net";
             <Form.Group as={Col} md="12" className="mb-3">
               <Form.Label>Department</Form.Label>
               <Select
-                  options={departmentList}
-                  value={selectedDept}
-                  onChange={(selectedOption) => setSelectedDept(selectedOption)}
-                  placeholder="Select Department..."
-                  isSearchable={true}
-                  styles={{
-                    control: (base, state) => ({
-                      ...base,
+                options={departmentList}
+                value={selectedDept}
+                onChange={(selectedOption) => setSelectedDept(selectedOption)}
+                placeholder="Select Department..."
+                isSearchable={true}
+                styles={{
+                  control: (base, state) => ({
+                    ...base,
+                    borderColor: (validated && !selectedDept)
+                        ? "#dc3545"
+                        : (validated && selectedDept)
+                            ? "#198754"
+                            : base.borderColor,
+                    boxShadow: state.isFocused
+                        ? (validated && selectedDept ? "0 0 0 0.25rem rgba(25, 135, 84, 0.25)" : base.boxShadow)
+                        : "none",
+                    '&:hover': {
                       borderColor: (validated && !selectedDept)
                           ? "#dc3545"
                           : (validated && selectedDept)
                               ? "#198754"
                               : base.borderColor,
-                      boxShadow: state.isFocused
-                          ? (validated && selectedDept ? "0 0 0 0.25rem rgba(25, 135, 84, 0.25)" : base.boxShadow)
-                          : "none",
-                      '&:hover': {
-                        borderColor: (validated && !selectedDept)
-                            ? "#dc3545"
-                            : (validated && selectedDept)
-                                ? "#198754"
-                                : base.borderColor,
-                      }
-                    })
-                  }}
+                    }
+                  })
+                }}
               />
             </Form.Group>
             <Row className="mb-3">
@@ -583,136 +592,229 @@ const FUNCTIONS_BASE = "https://us-central1-fep-tracker.cloudfunctions.net";
       </Modal>
 
       {selectedEvent && (
-          <div
-              onClick={() => setSelectedEvent(null)}
-              style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}
-          >
-            <div onClick={e => e.stopPropagation()} style={{ width: "100%", maxWidth: 540 }}>
-              <EventCard
-                  event={selectedEvent}
-                  user={user}
-                  status="Upcoming"
-                  onCallBack={deleteEvent}
-                  onEdit={handleEditEvent}
-                  onManage={handleOpenManage}
-                  onRefresh={fetchEvents}
-                  onApply={() => handleApply(user.uid, selectedEvent.id)}
-              />
-              <div style={{ textAlign: "center", marginTop: 8 }}>
-                <button
-                    onClick={() => setSelectedEvent(null)}
-                    style={{ background: "white", border: "none", borderRadius: 8, padding: "6px 20px", cursor: "pointer", fontSize: 13, color: "#555" }}
-                >
-                  Close
-                </button>
-              </div>
+        <div
+          onClick={() => setSelectedEvent(null)}
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}
+        >
+          <div onClick={e => e.stopPropagation()} style={{ width: "100%", maxWidth: 540 }}>
+            <EventCard
+              event={selectedEvent}
+              user={user}
+              status="Upcoming"
+              onCallBack={deleteEvent}
+              onEdit={handleEditEvent}
+              onManage={handleOpenManage}
+              onRefresh={fetchEvents}
+              onApply={() => handleApply(user.uid, selectedEvent.id)}
+            />
+            <div style={{ textAlign: "center", marginTop: 8 }}>
+              <button
+                onClick={() => setSelectedEvent(null)}
+                style={{ background: "white", border: "none", borderRadius: 8, padding: "6px 20px", cursor: "pointer", fontSize: 13, color: "#555" }}
+              >
+                Close
+              </button>
             </div>
           </div>
+        </div>
       )}
 
-      <div className="d-flex justify-content-between align-items-center position-relative py-3">
-        <div className="d-flex gap-2">
-          <Button variant="outline-primary" onClick={handlePrevWeek}>&larr; Previous Week</Button>
-
-          <Button variant="outline-secondary" onClick={handleToday}>Today</Button>
-
-          <div style={{ 
-            padding: "6px 12px", 
-            borderRadius: "6px", 
-            border: "1px solid #2563eb",
-            fontSize: "14px",
-            display: "flex",
-            alignItems: "center"
-          }}>
-            <Form.Check 
-              type="switch"
-              id="google-calendar-toggle"
-              label=" Show Google Calendar"
-              checked={showGoogleCalendar}
-              onChange={async () => {
-                if (!showGoogleCalendar) {
-                  const userSnap = await getDoc(doc(database, "users", user.uid));
-                  const alreadyConnected = userSnap.data()?.googleCalendarConnected;
-
-                  if (alreadyConnected) {
-                    setShowGoogleCalendar(true);
-                    await updateDoc(doc(database, "users", user.uid), {
-                      "preferences.showGoogleCalendar": true,
-                    });
-                  } else {
-                    await connectGoogleCalendar();
-                  }
-                  } else {
-                  setShowGoogleCalendar(false);
-                  await updateDoc(doc(database, "users", user.uid), {
-                    "preferences.showGoogleCalendar": false,
-                  });
-                }
-              }}
-              style={{ cursor: "pointer", marginBottom: 0, color: "#2563eb" }}
-            />
+      <div className="py-3">
+        {/* Desktop layout */}
+        <div className="d-none d-md-flex justify-content-between align-items-center">
+          <div className="d-flex gap-2">
+            <Button variant="outline-primary" onClick={handlePrevWeek}>&larr; Previous Week</Button>
+            <Button variant="outline-secondary" onClick={handleToday}>Today</Button>
+            <Button variant="outline-primary" onClick={handleNextWeek}>Next Week &rarr;</Button>
           </div>
-        </div>
-        <div>
-          <div style={{
-            position: "absolute",
-            left: "50%",
-            transform: "translateX(-50%)",
-            textAlign: "center",
-            top: "0px"
-            
-            }}>
+          <div className="text-center">
             <h2 className="mb-0">Schedule</h2>
             <span>Week of {format(currentWeekStart, "MMMM do, yyyy")}</span>
           </div>
-        </div>
-        <div className="d-flex gap-2">
-          {user?.role === "staff" || user?.role === "admin" && (
-            <div>
+          <div className="d-flex gap-2 align-items-center">
+            <div style={{ padding: "4px 10px", borderRadius: "6px", border: "1px solid #2563eb", fontSize: "13px", display: "flex", alignItems: "center" }}>
+              <Form.Check
+                type="switch"
+                id="google-calendar-toggle"
+                label=" Show Google Calendar"
+                checked={showGoogleCalendar}
+                onChange={async () => {
+                  if (!showGoogleCalendar) {
+                    const userSnap = await getDoc(doc(database, "users", user.uid));
+                    const alreadyConnected = userSnap.data()?.googleCalendarConnected;
+                    if (alreadyConnected) {
+                      setShowGoogleCalendar(true);
+                      await updateDoc(doc(database, "users", user.uid), { "preferences.showGoogleCalendar": true });
+                    } else {
+                      await connectGoogleCalendar();
+                    }
+                  } else {
+                    setShowGoogleCalendar(false);
+                    await updateDoc(doc(database, "users", user.uid), { "preferences.showGoogleCalendar": false });
+                  }
+                }}
+                style={{ cursor: "pointer", marginBottom: 0, color: "#2563eb" }}
+              />
+            </div>
+            <Button
+              variant={isListView ? "primary" : "outline-primary"}
+              onClick={() => setIsListView(!isListView)}
+            >
+              {isListView ? "Calendar View" : "List View"}
+            </Button>
+            {user?.role === "staff" || user?.role === "admin" && (
               <Button variant="primary" onClick={() => { setEditingEvent(null); resetForm(); setShowForm(true); }}>
                 + Add Job
               </Button>
-            </div>
             )}
-          <Button variant="outline-primary" onClick={handleNextWeek}>Next Week &rarr;</Button>
+          </div>
+        </div>
+
+        {/* Mobile layout */}
+        <div className="d-flex d-md-none flex-column align-items-center gap-2">
+          <h5 className="mb-0">Schedule</h5>
+          <span style={{ fontSize: "13px" }}>Week of {format(currentWeekStart, "MMMM do, yyyy")}</span>
+          <div className="d-flex gap-2">
+            <Button size="sm" variant="outline-primary" onClick={handlePrevWeek}>&larr;</Button>
+            <Button size="sm" variant="outline-secondary" onClick={handleToday}>Today</Button>
+            <Button size="sm" variant="outline-primary" onClick={handleNextWeek}>&rarr;</Button>
+          </div>
+          <div className="d-flex gap-2 align-items-center flex-wrap justify-content-center">
+            <div style={{ padding: "4px 10px", borderRadius: "6px", border: "1px solid #2563eb", fontSize: "12px", display: "flex", alignItems: "center" }}>
+              <Form.Check
+                type="switch"
+                id="google-calendar-toggle-mobile"
+                label=" Google Cal"
+                checked={showGoogleCalendar}
+                onChange={async () => {
+                  if (!showGoogleCalendar) {
+                    const userSnap = await getDoc(doc(database, "users", user.uid));
+                    const alreadyConnected = userSnap.data()?.googleCalendarConnected;
+                    if (alreadyConnected) {
+                      setShowGoogleCalendar(true);
+                      await updateDoc(doc(database, "users", user.uid), { "preferences.showGoogleCalendar": true });
+                    } else {
+                      await connectGoogleCalendar();
+                    }
+                  } else {
+                    setShowGoogleCalendar(false);
+                    await updateDoc(doc(database, "users", user.uid), { "preferences.showGoogleCalendar": false });
+                  }
+                }}
+                style={{ cursor: "pointer", marginBottom: 0, color: "#2563eb" }}
+              />
+            </div>
+            {user?.role === "staff" || user?.role === "admin" && (
+              <Button size="sm" variant="primary" onClick={() => { setEditingEvent(null); resetForm(); setShowForm(true); }}>
+                + Add Job
+              </Button>
+            )}
+          </div>
         </div>
       </div>
-            
-      <Card style={{ flex: 1, overflow: "hidden" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "50px repeat(7, 1fr)", height: "100%" }}>
-          <div style={{ marginTop: "10px" }}>
-            {hours.map((h) => (
-              <div key={h} style={{ height: HOUR_HEIGHT, borderBottom: "1px solid #eee", fontSize: "12px", textAlign: "right", paddingRight: 10, lineHeight: `${HOUR_HEIGHT}px` }}>
-                {h > 12 ? `${h - 12} PM` : h === 12 ? "12 PM" : `${h} AM`}
-              </div>
-            ))}
-          </div>
 
+      {isListView ? (
+        <div>
           {Array.from({ length: 7 }).map((_, i) => {
             const day = addDays(currentWeekStart, i);
+            const formattedDay = format(day, "yyyy-MM-dd");
+            const dayJobs = events.filter((e) => {
+              if (!e.date) return false;
+              const [year, month, dateNum] = e.date.split("-").map(Number);
+              const eventDate = new Date(year, month - 1, dateNum);
+              return format(eventDate, "yyyy-MM-dd") === formattedDay;
+            }).sort((a, b) => a.time.localeCompare(b.time));
+
             return (
-              <div key={i} style={{ borderLeft: "1px solid #eee", position: "relative" }}>
-                <div style={{ height: "40px", background: "#f8f9fa", textAlign: "center", fontWeight: "bold", borderBottom: "2px solid #ddd" }}>
-                  {format(day, "EEE")}
-                  <div style={{ fontSize: "10px" }}>{format(day, "MM/dd")}</div>
+              <div key={i} className="mb-3">
+                <div style={{
+                  background: "#1e3a5f",
+                  color: "#ffffff",
+                  padding: "8px 12px",
+                  fontWeight: "bold",
+                  borderRadius: "6px 6px 0 0",
+                  borderBottom: "2px solid #3a6ea8",
+                  fontSize: "14px",
+                }}>
+                  {format(day, "EEEE, MMMM do, yyyy")}
                 </div>
-                <div style={{ position: "relative" }}>
-                  {hours.map((h) => (
-                    <div key={h} style={{ height: HOUR_HEIGHT, borderBottom: "1px solid #f1f1f1" }} />
-                  ))}
-                  {renderEventsForDay(day)}
-                </div>
+                {dayJobs.length === 0 ? (
+                  <div style={{
+                    padding: "12px",
+                    color: "#aaa",
+                    fontSize: "14px",
+                    border: "1px solid #333",
+                    borderTop: "none",
+                    borderRadius: "0 0 6px 6px",
+                    background: "#111827",
+                  }}>
+                    No jobs posted
+                  </div>
+                ) : (
+                  dayJobs.map((event) => (
+                    <div
+                    key={event.id}
+                    onClick={() => setSelectedEvent(event)}
+                    style={{
+                      padding: "12px",
+                      border: "1px solid #333",
+                      borderTop: "none",
+                      cursor: "pointer",
+                      background: getEventColor(event, user),
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
+                    onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+                  >
+                    <div>
+                      <div style={{ fontWeight: "bold", fontSize: "15px", color: getEventColor(event, user) === "#ffc107" ? "#000000" : "#ffffff" }}>{event.title}</div>
+                      <div style={{ fontSize: "13px", color: getEventColor(event, user) === "#ffc107" ? "#333333" : "rgba(255,255,255,0.8)" }}>{event.time} &bull; {event.location || "TBD"}</div>
+                    </div>
+                  </div>
+                  ))
+                )}
               </div>
             );
           })}
         </div>
-      </Card>
+      ) : (
+        <Card style={{ flex: 1, overflow: "hidden" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "50px repeat(7, 1fr)", height: "100%" }}>
+            <div style={{ marginTop: "10px" }}>
+              {hours.map((h) => (
+                <div key={h} style={{ height: HOUR_HEIGHT, borderBottom: "1px solid #eee", fontSize: "12px", textAlign: "right", paddingRight: 10, lineHeight: `${HOUR_HEIGHT}px` }}>
+                  {h > 12 ? `${h - 12} PM` : h === 12 ? "12 PM" : `${h} AM`}
+                </div>
+              ))}
+            </div>
+            {Array.from({ length: 7 }).map((_, i) => {
+              const day = addDays(currentWeekStart, i);
+              return (
+                <div key={i} style={{ borderLeft: "1px solid #eee", position: "relative" }}>
+                  <div style={{ height: "40px", background: "#f8f9fa", textAlign: "center", fontWeight: "bold", borderBottom: "2px solid #ddd" }}>
+                    {format(day, "EEE")}
+                    <div style={{ fontSize: "10px" }}>{format(day, "MM/dd")}</div>
+                  </div>
+                  <div style={{ position: "relative" }}>
+                    {hours.map((h) => (
+                      <div key={h} style={{ height: HOUR_HEIGHT, borderBottom: "1px solid #f1f1f1" }} />
+                    ))}
+                    {renderEventsForDay(day)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
 
       <JobManagementModal
-          show={showManageModal}
-          onHide={() => setShowManageModal(false)}
-          event={selectedEvent}
-          onRefresh={fetchEvents}
+        show={showManageModal}
+        onHide={() => setShowManageModal(false)}
+        event={selectedEvent}
+        onRefresh={fetchEvents}
       />
     </div>
   );
