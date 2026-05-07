@@ -398,7 +398,6 @@ function Dashboard({ user }) {
             <Button
               variant={isJobFormOpen ? "outline-secondary" : "primary"}
               disabled = {!isAdmin}
-              variant={showForm ? "outline-secondary" : "primary"}
               className="w-100 py-2 mb-3 shadow-sm"
               onClick={() => {
                 if (isJobFormOpen) {

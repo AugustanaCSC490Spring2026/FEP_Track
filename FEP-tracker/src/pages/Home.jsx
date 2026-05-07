@@ -14,11 +14,14 @@ import { auth } from "../firebase-config";
 import JobManagementModal from "../components/JobManagementModal";
 import Select from 'react-select';
 
+
 function Home({ user }) { 
   const [events, setEvents] = useState([]);
   const [googleEvents, setGoogleEvents] = useState([]);
   const [showGoogleCalendar, setShowGoogleCalendar] = useState(false);
   const [prefLoaded, setPrefLoaded] = useState(false);
+  const isAdmin = user?.role === "admin";
+
 
   useEffect(() =>{
     const loadPref = async() =>{
@@ -606,6 +609,7 @@ function Home({ user }) {
               onManage={handleOpenManage}
               onRefresh={fetchEvents}
               onApply={() => handleApply(user.uid, selectedEvent.id)}
+              isAdmin={isAdmin}
             />
             <div style={{ textAlign: "center", marginTop: 8 }}>
               <button
