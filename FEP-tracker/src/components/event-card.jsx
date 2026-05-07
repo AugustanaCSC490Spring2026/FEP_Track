@@ -20,6 +20,7 @@ export default function EventCard({
   status,
   onConfirm,
   onViewCompletedDetails,
+  isAdmin, 
 }) {
   const filled = event?.students?.length ?? 0;
   const location = useLocation();
@@ -187,9 +188,10 @@ export default function EventCard({
               <div className="d-flex gap-2">
                   {status === "Upcoming" && (
                       <>
-                          <Button variant="outline-primary" size="sm" onClick={() => onEdit(event)}>Edit</Button>
-                          <Button variant="danger" size="sm" onClick={() => onCallBack(event.id)}>Delete</Button>
+                          <Button disabled={!isAdmin} variant="outline-primary" size="sm" onClick={() => onEdit(event)}>Edit</Button>
+                          <Button disabled={!isAdmin} variant="danger" size="sm" onClick={() => onCallBack(event.id)}>Delete</Button>
                           <Button
+                              disabled={!isAdmin}
                               variant={pendingCount > 0 ? "warning" : "outline-primary"}
                               size="sm"
                               onClick={() => onManage(event)}
@@ -200,7 +202,7 @@ export default function EventCard({
                   )}
 
                   {status === "Pending Approval" && (
-                      <Button variant="success" size="sm" className="w-100" onClick={() => onConfirm(event)}>
+                      <Button disabled={!isAdmin} variant="success" size="sm" className="w-100" onClick={() => onConfirm(event)}>
                           Confirm Hours
                       </Button>
                   )}
@@ -208,7 +210,7 @@ export default function EventCard({
                 {status === "Completed" && (
                     <div className="w-100 text-center">
                         <Badge bg="secondary" className="w-100 mb-2">Archived & Verified</Badge>
-                        <Button
+                        <Button disabled={!isAdmin}
                             variant="primary"
                             size="sm"
                             className="w-100 text-white"

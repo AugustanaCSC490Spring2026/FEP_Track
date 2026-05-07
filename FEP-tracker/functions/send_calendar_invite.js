@@ -3,7 +3,7 @@ const { getFirestore } = require("firebase-admin/firestore");
 
 const { calendarAssignedTemplate } = require("./email_templates");
 const { GMAIL_EMAIL, GMAIL_PASSWORD, sendEmail } = require("./email_service");
-const ENABLE_EMAILS = false;
+const ENABLE_EMAILS = true;
 
 
 exports.sendCalendarInvite = onDocumentUpdated(

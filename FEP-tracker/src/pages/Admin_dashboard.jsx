@@ -10,7 +10,6 @@ import {
   doc,
   getDoc,
 } from "firebase/firestore";
-/* ------- */
 import EventCard from "../components/event-card";
 import Button from "react-bootstrap/Button";
 import Col from "react-bootstrap/Col";
@@ -44,6 +43,8 @@ function Dashboard({ user }) {
   const [showCompletedModal, setShowCompletedModal] = useState(false);
   const [completedEventDetails, setCompletedEventDetails] = useState(null);
   const jobFormRef = useRef();
+  const isAdmin = user?.role === "admin";
+
   const collectionMap = {
     Upcoming: "upcoming_events",
     "Pending Approval": "pending_events",
@@ -371,6 +372,7 @@ function Dashboard({ user }) {
                   color: "var(--color-primary-blue-light)",
                   fontWeight: "700",
                   marginBottom: "5px",
+                  textAlign: "center"
                 }}
               >
                 Admin Dashboard
@@ -380,16 +382,24 @@ function Dashboard({ user }) {
                   color: "var(--color-text-secondary)",
                   fontSize: "0.95rem",
                   lineHeight: "1.4",
+                  textAlign: "center",
+                  display: "block",
                 }}
               >
-                Welcome back, <strong>{user.displayName || "Admin"}</strong>.
-                Manage, track, and schedule upcoming student jobs from this
-                panel.
+                Welcome back, {user.displayName || "User" }.{" "}
+                <br />
+                
+                {isAdmin
+                  ? "Manage, track, and schedule upcoming student jobs from this panel."
+                  : <strong> "You are currently in view-only mode. Only administrators can modify jobs."</strong>}
               </p>
             </div>
 
             <Button
               variant={isJobFormOpen ? "outline-secondary" : "primary"}
+              disabled = {!isAdmin}
+              variant={showForm ? "outline-secondary" : "primary"}
+              className="w-100 py-2 mb-3 shadow-sm"
               onClick={() => {
                 if (isJobFormOpen) {
                   jobFormRef.current.closeForm();
@@ -670,6 +680,7 @@ function Dashboard({ user }) {
                     onCallBack={deleteEvent}
                     onViewCompletedDetails={handleViewCompletedDetails}
                     user={user}
+                    isAdmin={isAdmin}
                   />
                 ))
               )}
