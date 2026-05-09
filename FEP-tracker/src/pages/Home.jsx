@@ -13,8 +13,7 @@ import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "../firebase-config";
 import JobManagementModal from "../components/JobManagementModal";
 import Select from 'react-select';
-
-
+import { timeFormat } from "../Utils/timeUtils";
 function Home({ user }) { 
   const [events, setEvents] = useState([]);
   const [googleEvents, setGoogleEvents] = useState([]);
@@ -439,19 +438,7 @@ function Home({ user }) {
       );
     });
 
-    function timeFormat(time) {
-      let hours = 0;
-      let ampm = "";
-      let minutes = 0;
-
-      if (time) {
-        const date = new Date(`1970-01-01T${time}:00`);
-        hours = date.getHours();
-        minutes = date.getMinutes();
-        ampm = hours >= 12 ? "PM" : "AM";
-      }
-      return `${((hours + 11) % 12) + 1}:${minutes.toString().padStart(2, '0')} ${ampm}`;
-    }
+ 
 
     const dayGoogleEvents = googleEvents.filter((e) => {
       const eventDate = typeof e.date === 'string' ? e.date : format(e.date, "yyyy-MM-dd");

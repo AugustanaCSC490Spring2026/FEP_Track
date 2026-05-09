@@ -9,7 +9,7 @@ import Modal from "react-bootstrap/Modal";
 import { useState } from "react";
 import { database } from "../firebase-config";
 import { doc, getDoc } from "firebase/firestore";
-
+import { timeFormat } from "../Utils/timeUtils";
 export default function EventCard({
   event,
   onCallBack,
@@ -79,19 +79,7 @@ export default function EventCard({
     }
   };
 
-  function timeFormat(time) {
-    let hours = 0;
-    let ampm = "";
-    let minutes = 0;
-
-    if (time) {
-      const date = new Date(`1970-01-01T${time}:00`);
-      hours = date.getHours();
-      minutes = date.getMinutes();
-      ampm = hours >= 12 ? "PM" : "AM";
-    }
-    return `${((hours + 11) % 12) + 1}:${minutes.toString().padStart(2, '0')} ${ampm}`;
-  }
+  
   return (
     <div style={{ maxWidth: 500, margin: "auto", padding: "0 16px" }}>
       <Card
