@@ -133,62 +133,79 @@ Log in to claim this position.
   };
 }
 
-function calendarAssignedTemplate(job) {
-    return {
-        subject: `Job Assignment Confirmed: ${job.title}`,
+function calendarAssignedTemplate(job, calendarAdded = false) {
+  const calendarTextLine = calendarAdded
+    ? "This job has also been added to your Google Calendar."
+    : "To have future jobs automatically added to your Google Calendar, connect your account on the home page.";
 
-        text: `
-    You have been successfully assigned to a job.
+  const calendarHtmlLine = calendarAdded
+    ? `<p style="margin:0;"> This job has been added to your Google Calendar.</p>`
+    : `<p style="margin:0;"> Want jobs added to your Google Calendar automatically? Connect your Google Calendar on the home page.</p>`;
 
-    ----------------------------------------
+  return {
+    subject: `Job Assignment Confirmed: ${job.title}`,
 
-    Job Title: ${job.title || "TBD"}
-    Department: ${job.department || "TBD"}
-    Location: ${job.location || "TBD"}
-    Date: ${job.date || "TBD"}
-    Time: ${formatTimeRange(job.time) || "TBD"}
+    text: `
+Job Assignment Confirmed
 
-    ----------------------------------------
+You have been successfully assigned to a job.
 
-    Additional Information:
-    ${job.extra_details || "None provided"}
+----------------------------------------
 
-    ----------------------------------------
+Job Title:   ${job.title || "TBD"}
+Department:  ${job.department || "TBD"}
+Location:    ${job.location || "TBD"}
+Date:        ${job.date || "TBD"}
+Time:        ${formatTimeRange(job.time) || "TBD"}
 
-    This job has also been added to your Google Calendar.
+----------------------------------------
 
-    If you have any questions, please contact your supervisor.
+Additional Information:
+${job.extra_details || "None provided"}
+
+----------------------------------------
+
+${calendarTextLine}
+
+If you have any questions, please contact your supervisor.
     `,
 
-        html: `
-    <div style="font-family: Arial, sans-serif; color: #333;">
-    <h2 style="color: #0d6efd;">Job Assignment Confirmed</h2>
+    html: `
+<div style="font-family: Arial; max-width:600px; margin:auto; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
+
+  <div style="background:#0d6efd; color:white; padding:14px;">
+    <h2 style="margin:0;">Job Assignment Confirmed</h2>
+  </div>
+
+  <div style="padding:18px;">
 
     <p>You have been successfully assigned to a job.</p>
 
-    <hr />
-
-    <p><strong>Job Title:</strong> ${job.title || "TBD"}</p>
-    <p><strong>Department:</strong> ${job.department || "TBD"}</p>
-    <p><strong>Location:</strong> ${job.location || "TBD"}</p>
-    <p><strong>Date:</strong> ${job.date || "TBD"}</p>
-    <p><strong>Time:</strong> ${formatTimeRange(job.time) || "TBD"}</p>
-
-    <hr />
-
-    <p><strong>Additional Information:</strong></p>
-    <p>${job.extra_details || "None provided"}</p>
-
-    <hr />
-
-    <p>This job has been added to your Google Calendar.</p>
-
-    <p style="font-size: 12px; color: #777;">
-        Please contact your supervisor if you have any questions.
-    </p>
+    <div style="background:#f3f4f6; padding:12px; border-radius:6px;">
+      <p style="margin:0 0 6px 0;"><strong>Job Title:</strong> ${job.title || "TBD"}</p>
+      <p style="margin:0 0 6px 0;"><strong>Department:</strong> ${job.department || "TBD"}</p>
+      <p style="margin:0 0 6px 0;"><strong>Location:</strong> ${job.location || "TBD"}</p>
+      <p style="margin:0 0 6px 0;"><strong>Date:</strong> ${job.date || "TBD"}</p>
+      <p style="margin:0;"><strong>Time:</strong> ${formatTimeRange(job.time) || "TBD"}</p>
     </div>
+
+    <div style="margin-top:16px;">
+      <p style="margin:0 0 6px 0; font-weight:bold;">Additional Information</p>
+      <p style="margin:0;">${job.extra_details || "None provided"}</p>
+    </div>
+
+    <div style="margin-top:16px; background:#f3f4f6; padding:12px; border-radius:6px;">
+      ${calendarHtmlLine}
+    </div>
+
+    <p style="margin-top:16px; font-size:12px; color:#6b7280;">
+      If you have any questions, please contact your supervisor.
+    </p>
+
+  </div>
+</div>
     `,
-    };
+  };
 }
 
 function newUserTemplate(user) {

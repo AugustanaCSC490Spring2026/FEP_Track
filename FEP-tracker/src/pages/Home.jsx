@@ -174,7 +174,7 @@ function Home({ user }) {
     authUrl.searchParams.set("client_id", clientId);
     authUrl.searchParams.set("redirect_uri", `${window.location.origin}/oauth-callback`);
     authUrl.searchParams.set("response_type", "code");
-    authUrl.searchParams.set("scope", "https://www.googleapis.com/auth/calendar.events.readonly");
+    authUrl.searchParams.set("scope", "https://www.googleapis.com/auth/calendar.events");
     authUrl.searchParams.set("access_type", "offline");
     authUrl.searchParams.set("prompt", "consent");
 
@@ -438,7 +438,19 @@ function Home({ user }) {
       );
     });
 
- 
+    function timeFormat(time) {
+      let hours = 0;
+      let ampm = "";
+      let minutes = 0;
+
+      if (time) {
+        const date = new Date(`1970-01-01T${time}:00`);
+        hours = date.getHours();
+        minutes = date.getMinutes();
+        ampm = hours >= 12 ? "PM" : "AM";
+      }
+      return `${((hours + 11) % 12) + 1}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+    }
 
     const dayGoogleEvents = googleEvents.filter((e) => {
       const eventDate = typeof e.date === 'string' ? e.date : format(e.date, "yyyy-MM-dd");

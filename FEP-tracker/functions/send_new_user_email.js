@@ -7,7 +7,7 @@ const {
 } = require("./email_service");
 
 const { newUserTemplate } = require("./email_templates");
-const ENABLE_EMAILS = false;
+const ENABLE_EMAILS = true;
 
 exports.sendNewUserEmail = onDocumentCreated(
   {
