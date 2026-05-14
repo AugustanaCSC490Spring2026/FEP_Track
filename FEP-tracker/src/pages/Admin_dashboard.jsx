@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { database } from "../firebase-config";
 import JobForms from "../components/Jobform";
-import { collection, query, getDocs, deleteDoc, doc } from "firebase/firestore";
+import { collection, query, getDocs } from "firebase/firestore";
 import EventCard from "../components/event-card";
 import Button from "react-bootstrap/Button";
 import Col from "react-bootstrap/Col";
@@ -77,15 +77,9 @@ function Dashboard({ user }) {
     }
   };
 
-  useEffect(() => { fetchEvents(); }, [currentTab]);
+  useEffect(() => { fetchEvents();setLoading(false) }, [event, currentTab]);
 
-  const deleteEvent = async (id) => {
-    if (window.confirm("Are you sure you want to delete this job?")) {
-      await deleteDoc(doc(database, "upcoming_events", id));
-      setEvents((prev) => prev.filter((e) => e.id !== id));
-      setSelectedEvent(null);
-    }
-  };
+
 
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -231,10 +225,8 @@ function Dashboard({ user }) {
                     onEdit={() => jobFormRef.current.handleEditEvent(event)}
                     onManage={handleOpenManage}
                     onRefresh={fetchEvents}
-                    onCallBack={deleteEvent}
                     onViewCompletedDetails={handleViewCompletedDetails}
                     user={user}
-                    isAdmin={isAdmin}
                   />
                 ))
               )}

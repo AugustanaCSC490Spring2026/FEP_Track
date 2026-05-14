@@ -1,3 +1,4 @@
+
 export  function timeFormat(time) {
     let hours = 0;
     let ampm = "";
@@ -61,3 +62,5 @@ export  const formatFirebaseTime = (timestamp, use24Hour = true) => {
       hour12: !use24Hour,
     });
   };
+
+

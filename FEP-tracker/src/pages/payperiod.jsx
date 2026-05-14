@@ -143,7 +143,9 @@ function StaffPeriodDetails({ period }) {
             try {
               const userDoc = await getDoc(doc(database, "users", uid));
               if (userDoc.exists()) name = userDoc.data().name;
-            } catch {}
+            } catch {
+              // ignore errors and just use UID as name
+            }
             const totalMins = entries.reduce((sum, e) => sum + (e.hours ?? 0) * 60 + (e.minutes ?? 0), 0);
             const hours = Math.floor(totalMins / 60);
             const minutes = totalMins % 60;
@@ -258,7 +260,7 @@ function StaffPeriodDetails({ period }) {
               {jobs.map((job, i) => (
                 <tr key={i}>
                   <td style={{ color: "#1b3a5c", fontWeight: 600, padding: "16px 20px", borderColor: "#e5e7eb" }}>{job.jobName}</td>
-                  <td className="text-end" style={{ color: "#374151", padding: "16px 20px", borderColor: "#e5e7eb" }}>{formatHours(job.hours ?? 0, job.minutes ?? 0)}</td>
+                  <td className="text-end" style={{ color: "#374151", padding: "16px 20px", borderColor: "#e5e7eb" }} > {formatHours(job.hours ?? 0, job.minutes ?? 0)}</td>
                 </tr>
               ))}
             </tbody>
@@ -269,12 +271,12 @@ function StaffPeriodDetails({ period }) {
         {!selectedStudent ? (
           <>
             <span className="fw-bold" style={{ color: "#1b3a5c", fontSize: "1.1rem" }}>Grand Total ({students.length})</span>
-            <Badge style={{ backgroundColor: "#1b3a5c", fontSize: "0.95rem", padding: "8px 16px" }}>{formatHours(grandHours, grandMinutes)}</Badge>
+            <Badge style={{ backgroundColor: "#1b3a5c", fontSize: "0.95rem", padding: "8px 16px" }} > {formatHours(grandHours, grandMinutes)}</Badge>
           </>
         ) : (
           <>
             <span className="fw-bold" style={{ color: "#1b3a5c", fontSize: "1.1rem" }}>Total</span>
-            <Badge style={{ backgroundColor: "#1b3a5c", fontSize: "0.95rem", padding: "8px 16px" }}>{formatHours(studentTotalHours, studentTotalMinutes)}</Badge>
+            <Badge style={{ backgroundColor: "#1b3a5c", fontSize: "0.95rem", padding: "8px 16px" }} > {formatHours(studentTotalHours, studentTotalMinutes)}</Badge>
           </>
         )}
       </div>
@@ -345,7 +347,7 @@ export default function PayPeriod({ user }) {
               {periods.map((p) => (
                 <button
                   key={p.id}
-                  className="list-group-item list-group-item-action border-0 d-flex justify-content-between align-items-center px-4 py-3"
+                  className="list-group-item list-group-item-action border-0 d-flex justify-content-between align-items-center px-4 py-3 mb-2"
                   style={{ backgroundColor: "white", borderLeft: "4px solid transparent", cursor: "pointer" }}
                   onClick={() => setSelectedPeriod(p)}
                 >
@@ -389,7 +391,7 @@ export default function PayPeriod({ user }) {
                 return (
                   <button
                     key={p.id}
-                    className="list-group-item list-group-item-action border-0 d-flex justify-content-between align-items-center px-4 py-3"
+                    className="list-group-item list-group-item-action border-0 d-flex justify-content-between align-items-center mb-2 px-4 py-3"
                     style={{
                       backgroundColor: isSelected ? "#eff6ff" : "white",
                       borderLeft: isSelected ? "4px solid #1b3a5c" : "4px solid transparent",

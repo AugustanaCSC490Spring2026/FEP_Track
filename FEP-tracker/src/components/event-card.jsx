@@ -8,7 +8,7 @@ import Col from "react-bootstrap/esm/Col";
 import Modal from "react-bootstrap/Modal";
 import { useState } from "react";
 import { database } from "../firebase-config";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc,deleteDoc } from "firebase/firestore";
 import { timeFormat } from "../Utils/timeUtils";
 export default function EventCard({
   event,
@@ -20,7 +20,6 @@ export default function EventCard({
   status,
   onConfirm,
   onViewCompletedDetails,
-  isAdmin, 
 }) {
   const filled = event?.students?.length ?? 0;
   const location = useLocation();
@@ -37,7 +36,7 @@ export default function EventCard({
   const hasApplied = event.students?.includes(user?.uid);
   const startTime = timeFormat(event.startTime) || null;
   const endTime = timeFormat(event.endTime) || "TBD";
-
+  const isAdmin = user?.role === "admin";
   const eventDateTime = new Date(`${event.date}T${event.startTime}:00`);
   const now = new Date();
   const diffInMs = eventDateTime - now;
@@ -78,7 +77,11 @@ export default function EventCard({
       }
     }
   };
-
+const deleteEvent = async (id) => {
+    if (window.confirm("Are you sure you want to delete this job?")) {
+      await deleteDoc(doc(database, "upcoming_events", id));
+    }
+  };
   
   return (
     <div style={{ maxWidth: 500, margin: "auto", padding: "0 16px" }}>
@@ -177,7 +180,7 @@ export default function EventCard({
                   {status === "Upcoming" && (
                       <>
                           <Button disabled={!isAdmin} variant="outline-primary" size="sm" onClick={() => onEdit(event)}>Edit</Button>
-                          <Button disabled={!isAdmin} variant="danger" size="sm" onClick={() => onCallBack(event.id)}>Delete</Button>
+                          <Button disabled={!isAdmin} variant="danger" size="sm" onClick={() => deleteEvent(event.id)}>Delete</Button>
                           <Button
                               disabled={!isAdmin}
                               variant={pendingCount > 0 ? "warning" : "outline-primary"}
@@ -219,7 +222,7 @@ export default function EventCard({
                       disabled={isAccepted || isPending || isFull}
                       onClick={() => onApply(user.uid, event.id)}
                   >
-                    {isAccepted ? "Accepted" : isPending ? "Pending Approval" : "Apply Now"}
+                    {isAccepted ? "Accepted" : isPending ? "Pending Approval" : hasApplied ? "Applied" : "Apply Now"}
                   </Button>
               )}
 
