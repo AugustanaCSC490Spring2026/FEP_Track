@@ -3,7 +3,7 @@
 import "../App.css";
 import { useState, useEffect } from "react";
 import { auth, provider, database } from "../firebase-config";
-import { doc, setDoc, getDocs, collection, deleteDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, setDoc, doc, deleteDoc, updateDoc } from "firebase/firestore";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Container from "react-bootstrap/Container";
@@ -43,43 +43,51 @@ function Login() {
   const handleSignIn = async () => {
     try {
       const result = await signInWithPopup(auth, provider);
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-      const token = credential.accessToken;
+      const user = result.user;
+      const emailKey = user.email.toLowerCase();
 
-      if (token) {
-        console.log("Token captured and saved!");
-        sessionStorage.setItem("google_access_token", token);
-      }
-
-      if (!result.user.email.endsWith("@augustana.edu")) {
+      if (!emailKey.endsWith("@augustana.edu")) {
         await signOut(auth);
         alert("Please use your Augustana school email to sign in.");
         return;
       }
 
-      const emailKey = result.user.email.toLowerCase();
-      const snap = await getDocs(collection(database, "users"));
-      const existingDoc = snap.docs.find(d => d.data().email?.toLowerCase() === emailKey);
-
-      if (!existingDoc) {
+      const q = query(collection(database, "users"), where("email", "==", emailKey));
+      const snap = await getDocs(q);
+      if (snap.empty) {
         await signOut(auth);
         alert("You have not been added to the system. Please contact your administrator.");
         return;
       }
 
-      if (existingDoc.id !== result.user.uid) {
+      const existingDoc = snap.docs[0];
+      if (existingDoc.id !== user.uid) {
         const existingData = existingDoc.data();
-        await setDoc(doc(database, "users", result.user.uid), {
+
+        await setDoc(doc(database, "users", user.uid), {
           ...existingData,
-          name: result.user.displayName,
+          name: user.displayName || existingData.name,
           email: emailKey,
           lastLogin: new Date(),
+          isMigration: true,
         });
         await deleteDoc(doc(database, "users", existingDoc.id));
+      } else {
+        await updateDoc(doc(database, "users", user.uid), {
+          lastLogin: new Date()
+        });
+      }
+
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const token = credential?.accessToken;
+      if (token) {
+        console.log("Token captured and saved!");
+        sessionStorage.setItem("google_access_token", token);
       }
 
     } catch (error) {
       console.error("Sign-In Error:", error);
+      await signOut(auth);
     }
   };
 

@@ -15,16 +15,15 @@ export default function useAuth() {
       if (currentUser) {
         const userRef = doc(database, "users", currentUser.uid);
 
-        // Listen for real-time changes to the user's Firestore document
-        unsubscribeSnapshot = onSnapshot(userRef, async (userSnap) => {
+        unsubscribeSnapshot = onSnapshot(userRef, (userSnap) => {
           if (!userSnap.exists()) {
-            // Document was deleted — sign them out automatically
-            await signOut(auth);
+            setUser(null);
+            setIsRegistered(false);
+            setLoading(false);
             return;
           }
 
           const role = userSnap.data().role;
-
           console.log("useAuth - Role:", role, "Exists:", true);
 
           setUser({

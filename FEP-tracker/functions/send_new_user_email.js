@@ -22,6 +22,11 @@ exports.sendNewUserEmail = onDocumentCreated(
       return;
     }
 
+    if (user.isMigration === true) {
+      console.log(`Migration detected for ${user.email} → skipping welcome email`);
+      return;
+    }
+
     console.log("New user created → sending email");
 
     if (ENABLE_EMAILS){
