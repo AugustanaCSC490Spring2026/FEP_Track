@@ -218,27 +218,45 @@ function Home({ user }) {
           return;
         }
 
-        const formatted = (data.items || []).map((item) => {
+      const formatted = (data.items || [])
+        .map((item) => {
           const start = new Date(item.start.dateTime || item.start.date);
           const end = new Date(item.end.dateTime || item.end.date);
+
           return {
             id: item.id,
-            title: item.summary,
+            title: item.summary?.trim(),
             time: `${format(start, "HH:mm")} – ${format(end, "HH:mm")}`,
             date: format(start, "yyyy-MM-dd"),
+            startTime: format(start, "HH:mm"),
+            endTime: format(end, "HH:mm"),
             isGoogleEvent: true,
             color: GOOGLE_COLORS[item.colorId] || DEFAULT_GOOGLE_COLOR,
           };
+        })
+        .filter((googleEvent) => {
+          return !events.some((localEvent) => {
+            return (
+              localEvent.title?.trim().toLowerCase() ===
+                googleEvent.title?.trim().toLowerCase() &&
+
+              localEvent.date === googleEvent.date &&
+
+              localEvent.startTime === googleEvent.startTime &&
+
+              localEvent.endTime === googleEvent.endTime
+            );
+          });
         });
 
-        setGoogleEvents(formatted);
+      setGoogleEvents(formatted);
       } catch (err) {
         console.error("Google Calendar fetch failed:", err);
       }
     };
 
     fetchGoogleCalendar();
-  }, [currentWeekStart, user, showGoogleCalendar]);
+  }, [currentWeekStart, user, showGoogleCalendar, events]);
 
   const deleteEvent = async (id) => {
     if (window.confirm("Are you sure you want to delete this job?")) {
