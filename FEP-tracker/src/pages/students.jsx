@@ -30,6 +30,7 @@ function Students({ user }) {
   const [notes, setNotes] = useState({});
   const [search, setSearch] = useState("");
   const [sortByRole, setSortByRole] = useState(false);
+  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
 
   const [confirmModal, setConfirmModal] = useState({
     show: false,
@@ -72,6 +73,20 @@ function Students({ user }) {
   };
 
   const fileInputRef = useRef(null);
+
+  // --- CSV Export Helper ---
+  const exportToCSV = (rows, filename) => {
+    const csv = Papa.unparse(rows);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   const rolePill = (role) => {
     const styles = {
@@ -120,20 +135,27 @@ function Students({ user }) {
   const handleCSVUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    const validRoles = ["student", "pending", "staff", "admin", "suspended"];
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
       complete: async (results) => {
         const newStudents = [];
-        for (const row of results.data) {
+        for (const rawRow of results.data) {
+          const row = Object.fromEntries(
+            Object.entries(rawRow).map(([k, v]) => [k.toLowerCase().replace(/[:\s]+$/g, "").trim(), v])
+          );
           if (!row.email) continue;
+          const importedRole = validRoles.includes(row.role?.toLowerCase())
+            ? row.role.toLowerCase()
+            : "student";
           const newStudent = {
             createdAt: serverTimestamp(),
             name: row.name || "N/A",
             email: row.email,
-            role: "student",
-            phone: row.phone || "",
-            ID: row.ID || ""
+            role: importedRole,
+            phone: row.phone || row["phone number"] || "",
+            ID: row.id || ""
           };
           try {
             const docRef = await addDoc(collection(database, "users"), newStudent);
@@ -201,7 +223,39 @@ function Students({ user }) {
     try {
       await deleteDoc(doc(database, "users", student.id));
       setStudents(prev => prev.filter(s => s.id !== student.id));
-    } catch (err) { console.error("Error deleting user:", err); }
+    }catch (err) { console.error("Error deleting user:", err); }
+  };
+
+  const handleDeleteAllStudents = async () => {
+    const toDelete = students.filter(s =>
+      s.role === "student" || s.role === "pending" || s.role === "suspended"
+    );
+    try {
+      // Export all to be deleted before removing
+      const timestamp = new Date().toISOString().slice(0, 10);
+      exportToCSV(
+        toDelete.map(s => ({
+          name: s.name || "",
+          email: s.email || "",
+          phone: s.phone || "",
+          ID: s.ID || "",
+          role: s.role || "",
+          note: notes[s.id] || "",
+        })),
+        `deleted_students_${timestamp}.csv`
+      );
+
+      await Promise.all(toDelete.map(s => deleteDoc(doc(database, "users", s.id))));
+      setStudents(prev => prev.filter(s =>
+        s.role !== "student" && s.role !== "pending" && s.role !== "suspended"
+      ));
+      setToastMessage(`${toDelete.length} users deleted and exported to CSV.`);
+      setShowToast(true);
+    } catch (err) {
+      console.error("Error deleting all students:", err);
+    } finally {
+      setShowDeleteAllModal(false);
+    }
   };
 
   const roleOrder = { admin: 0, staff: 1, student: 2, pending: 3, suspended: 4 };
@@ -214,6 +268,10 @@ function Students({ user }) {
   const sorted = sortByRole
     ? [...filtered].sort((a, b) => (roleOrder[a.role] ?? 5) - (roleOrder[b.role] ?? 5))
     : filtered;
+
+  const deletableCount = students.filter(s =>
+    s.role === "student" || s.role === "pending" || s.role === "suspended"
+  ).length;
 
   if (loading) return <p className="text-center mt-4">Loading students...</p>;
 
@@ -295,26 +353,70 @@ function Students({ user }) {
         </Modal.Footer>
       </Modal>
 
+      {/* Delete All Students Modal */}
+      <Modal show={showDeleteAllModal} onHide={() => setShowDeleteAllModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title className="text-danger">⚠️ Delete All Students</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>
+            This will permanently delete <strong>{deletableCount} user{deletableCount !== 1 ? "s" : ""}</strong> with
+            the roles <strong>Student</strong>, <strong>Pending</strong>, and <strong>Suspended</strong>.
+            Admins and staff will not be affected.
+          </p>
+          <p className="mb-0" style={{ fontSize: 13, color: "#166534", background: "#dcfce7", padding: "8px 12px", borderRadius: 6 }}>
+            📥 A CSV backup of all deleted users will automatically download to your device.
+          </p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowDeleteAllModal(false)}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={handleDeleteAllStudents}>
+            Delete {deletableCount} User{deletableCount !== 1 ? "s" : ""}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
       {/* Buttons */}
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <Button size="sm" className="d-md-none" variant="primary" onClick={() => fileInputRef.current && fileInputRef.current.click()}>
-          Import CSV
+        <div className="d-flex gap-2">
+          <Button size="sm" className="d-md-none" variant="primary" onClick={() => fileInputRef.current && fileInputRef.current.click()}>
+            Import CSV
+          </Button>
+          <Button size="default" className="d-none d-md-block" variant="primary" onClick={() => fileInputRef.current && fileInputRef.current.click()}>
+            Import Many Students (CSV)
+          </Button>
+          <input
+            type="file"
+            accept=".csv"
+            ref={fileInputRef}
+            style={{ display: "none" }}
+            onChange={handleCSVUpload}
+          />
+          <Button size="sm" className="d-md-none" variant="primary" onClick={() => setShowForm(true)}>
+            New User
+          </Button>
+          <Button size="default" className="d-none d-md-block" variant="primary" onClick={() => setShowForm(true)}>
+            Create New User
+          </Button>
+        </div>
+        <Button
+          variant="danger"
+          size="sm"
+          className="d-md-none"
+          onClick={() => setShowDeleteAllModal(true)}
+          disabled={deletableCount === 0}
+        >
+          Delete All Students
         </Button>
-        <Button size="default" className="d-none d-md-block" variant="primary" onClick={() => fileInputRef.current && fileInputRef.current.click()}>
-          Import Many Students (CSV)
-        </Button>
-        <input
-          type="file"
-          accept=".csv"
-          ref={fileInputRef}
-          style={{ display: "none" }}
-          onChange={handleCSVUpload}
-        />
-        <Button size="sm" className="d-md-none" variant="primary" onClick={() => setShowForm(true)}>
-          New User
-        </Button>
-        <Button size="default" className="d-none d-md-block" variant="primary" onClick={() => setShowForm(true)}>
-          Create New User
+        <Button
+          variant="danger"
+          className="d-none d-md-block"
+          onClick={() => setShowDeleteAllModal(true)}
+          disabled={deletableCount === 0}
+        >
+          Delete All Students
         </Button>
       </div>
 
@@ -376,7 +478,7 @@ function Students({ user }) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           style={{
-            width: "100%",
+            width: "40%",
             padding: "8px 14px",
             borderRadius: 8,
             border: "1px solid #e5e7eb",

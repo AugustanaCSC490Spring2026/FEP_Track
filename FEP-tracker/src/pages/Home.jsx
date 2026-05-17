@@ -334,7 +334,7 @@ function Home({ user }) {
         return format(eventDate, "yyyy-MM-dd") === formattedDay;
       })
       .sort((a, b) => a.time.localeCompare(b.time));
-    /*  */
+
     const jobElements = dayJobs.map((event, index) => {
       const pos = getEventPosition(event);
       const overlaps = dayJobs.filter((other) => {
@@ -468,6 +468,7 @@ function Home({ user }) {
       />
     </div>
   );
+
   const handleGoogleCalendarToggle = async () => {
     if (!showGoogleCalendar) {
       const userSnap = await getDoc(doc(database, "users", user.uid));
@@ -487,6 +488,7 @@ function Home({ user }) {
       });
     }
   };
+
   const handleToggleJobForm = useCallback(() => {
     if (isJobFormOpen) {
       jobFormRef.current.closeForm();
@@ -496,6 +498,7 @@ function Home({ user }) {
       jobFormRef.current.openForm();
     }
   }, [isJobFormOpen]);
+
   const hours = Array.from(
     { length: END_HOUR - START_HOUR },
     (_, i) => i + START_HOUR,
@@ -589,10 +592,12 @@ function Home({ user }) {
             <span>Week of {format(currentWeekStart, "MMMM do, yyyy")}</span>
           </div>
           <div className="d-flex gap-2 align-items-center">
-            <GoogleCalendarToggle
-              showGoogleCalendar={showGoogleCalendar}
-              onToggle={handleGoogleCalendarToggle}
-            />
+            {!isListView && (
+              <GoogleCalendarToggle
+                showGoogleCalendar={showGoogleCalendar}
+                onToggle={handleGoogleCalendarToggle}
+              />
+            )}
             <Button
               variant={isListView ? "primary" : "outline-primary"}
               onClick={() => setIsListView(!isListView)}
@@ -618,30 +623,24 @@ function Home({ user }) {
             Week of {format(currentWeekStart, "MMMM do, yyyy")}
           </span>
           <div className="d-flex gap-2">
-            <Button
-              size="sm"
-              variant="outline-primary"
-              onClick={handlePrevWeek}
-            >
+            <Button size="sm" variant="outline-primary" onClick={handlePrevWeek}>
               &larr;
             </Button>
             <Button size="sm" variant="outline-secondary" onClick={handleToday}>
               Today
             </Button>
-            <Button
-              size="sm"
-              variant="outline-primary"
-              onClick={handleNextWeek}
-            >
+            <Button size="sm" variant="outline-primary" onClick={handleNextWeek}>
               &rarr;
             </Button>
           </div>
           <div className="d-flex gap-2 align-items-center flex-wrap justify-content-center">
-            <GoogleCalendarToggle
-              showGoogleCalendar={showGoogleCalendar}
-              onToggle={handleGoogleCalendarToggle}
-              isMobile={true}
-            />
+            {!isListView && (
+              <GoogleCalendarToggle
+                showGoogleCalendar={showGoogleCalendar}
+                onToggle={handleGoogleCalendarToggle}
+                isMobile={true}
+              />
+            )}
             {isAdmin && (
               <Button
                 variant={isJobFormOpen ? "outline-secondary" : "primary"}
@@ -713,12 +712,8 @@ function Home({ user }) {
                         justifyContent: "space-between",
                         alignItems: "center",
                       }}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.opacity = "0.85")
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.opacity = "1")
-                      }
+                      onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
+                      onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
                     >
                       <div>
                         <div
@@ -742,7 +737,7 @@ function Home({ user }) {
                                 : "rgba(255,255,255,0.8)",
                           }}
                         >
-                          {event.time} &bull; {event.location || "TBD"}
+                          {timeFormat(event.startTime)} - {timeFormat(event.endTime)} &bull; {event.location || "TBD"}
                         </div>
                       </div>
                     </div>
