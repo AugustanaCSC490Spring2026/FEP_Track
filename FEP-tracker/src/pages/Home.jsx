@@ -606,11 +606,11 @@ function Home({ user }) {
             </Button>
             {isAdmin && (
               <Button
-                variant={isJobFormOpen ? "outline-secondary" : "primary"}
+                variant= "primary"
                 className="py-2 shadow-sm"
                 onClick={handleToggleJobForm}
               >
-                {isJobFormOpen ? "✕ Cancel" : "+ Add Job"}
+                + Add Job
               </Button>
             )}
           </div>
@@ -643,11 +643,11 @@ function Home({ user }) {
             )}
             {isAdmin && (
               <Button
-                variant={isJobFormOpen ? "outline-secondary" : "primary"}
+                variant="primary" 
                 className="shadow-sm"
                 onClick={handleToggleJobForm}
               >
-                {isJobFormOpen ? "✕ Cancel" : "+ Add Job"}
+               + Add Job"
               </Button>
             )}
           </div>
