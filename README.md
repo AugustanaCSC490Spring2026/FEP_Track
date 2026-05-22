@@ -1,4 +1,4 @@
-# Clinical_Placement_Tracker
+# Augustana Flexible Employment Program Tracker
 
 # DEV Blog
 This  the link to team Jay's Dev blog 
