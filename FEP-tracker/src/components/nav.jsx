@@ -1,23 +1,24 @@
 import { useState } from "react";
 import {
-  House,
   BoxArrowInRight,
   Person,
-  Mortarboard,
+  House,
   Calendar4Week,
   FileEarmarkBarGraph,
+  People,
+  CurrencyDollar
 } from "react-bootstrap-icons";
 /* There is no need for a login seperate page it should be built on to the profile page */
 
 const baseNavLinks = [
-  { href: "/", label: "Home", icon: <House className="me-3" /> },
-  { href: "/profile", label: "Dashboard", icon: <Person className="me-3" /> },
-  { href: "/payperiod", label: "Pay Periods", icon: <Calendar4Week className="me-3" /> },
+  { href: "/", label: "Schedule", icon: <Calendar4Week className="me-3" />  },
+  { href: "/profile", label: "Dashboard", icon: <House className="me-3" /> },
+  { href: "/payperiod", label: "Pay Periods", icon: <CurrencyDollar className="me-3" /> },
   { href: "/logout", label: "Logout", icon: <BoxArrowInRight className="me-3" /> },
 ];
 
 const staffLinks = [
-  { href: "/students", label: "Students", icon: <Mortarboard className="me-3" />},
+  { href: "/users", label: "Users", icon: <People className="me-3" />},
   { href: "/reports", label: "Reports", icon: <FileEarmarkBarGraph className="me-3" />}
 ];
 

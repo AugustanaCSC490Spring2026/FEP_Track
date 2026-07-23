@@ -45,7 +45,7 @@ function App() {
   const { user, loading } = useAuth();
 
   if (user?.role === "admin") {
-    routes.push({ path: "/students", component: Students, roles: ["admin"] });
+    routes.push({ path: "/users", component: Students, roles: ["admin"] });
   }
 
   if (loading) return <h2>Loading...</h2>;
