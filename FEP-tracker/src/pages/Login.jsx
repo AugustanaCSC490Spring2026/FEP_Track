@@ -81,7 +81,7 @@ function Login() {
       const credential = GoogleAuthProvider.credentialFromResult(result);
       const token = credential?.accessToken;
       if (token) {
-        console.log("Token captured and saved!");
+
         sessionStorage.setItem("google_access_token", token);
       }
 

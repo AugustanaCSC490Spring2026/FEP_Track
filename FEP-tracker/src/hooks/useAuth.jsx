@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { auth, database } from "../firebase-config";
 import { doc, onSnapshot } from "firebase/firestore";
-import { onAuthStateChanged, signOut } from "firebase/auth";
+// eslint-disable-next-line no-unused-vars
+import { onAuthStateChanged, signOut } from "firebase/auth"; 
 
 export default function useAuth() {
   const [isRegistered, setIsRegistered] = useState(false);
@@ -24,7 +25,7 @@ export default function useAuth() {
           }
 
           const role = userSnap.data().role;
-          console.log("useAuth - Role:", role, "Exists:", true);
+         
 
           setUser({
             uid: currentUser.uid,

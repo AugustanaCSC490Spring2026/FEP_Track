@@ -7,7 +7,7 @@ const GOOGLE_CLIENT_ID = defineSecret("GOOGLE_CLIENT_ID");
 const GOOGLE_CLIENT_SECRET = defineSecret("GOOGLE_CLIENT_SECRET");
 
 
-exports.exchangeGoogleCode = onRequest(
+const exchangeGoogleCode = onRequest(
   { cors: true, secrets: [GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET] },
   async (req, res) => {
     const db = getFirestore();
@@ -58,7 +58,7 @@ exports.exchangeGoogleCode = onRequest(
   }
 );
 
-exports.refreshGoogleToken = onRequest(
+const refreshGoogleToken = onRequest(
   { cors: true, secrets: [GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET] },
   async (req, res) => {
     const db = getFirestore();
@@ -103,3 +103,5 @@ exports.refreshGoogleToken = onRequest(
     }
   }
 );
+
+  module.exports = { exchangeGoogleCode, refreshGoogleToken };

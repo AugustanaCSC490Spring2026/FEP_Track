@@ -26,7 +26,6 @@ export default function JobManagementModal({ show, onHide, event, onRefresh }) {
     }, [show, event]);
 
     const handleAction = async (studentId, action) => {
-        console.log("Handling Action")
         setLoading(true);
         const eventRef = doc(database, "upcoming_events", event.id);
 

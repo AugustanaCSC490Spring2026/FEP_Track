@@ -55,7 +55,7 @@ export default function EventCard({
     setShowModal(true);
 
     const supervisorUid = event.createdByID?.uid;
-    console.log(supervisorUid);
+  
 
     if (supervisorUid) {
       try {

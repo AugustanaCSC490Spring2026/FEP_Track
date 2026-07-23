@@ -26,7 +26,10 @@ async function sendEmail({ to, subject, text, html }) {
     throw new Error("Missing 'to' email");
   }
 
-
+  console.log("Sending email to:", to);
+  console.log("Email subject:", subject);
+  console.log("Email text:", text);
+  console.log("Email html:", html);
   const mailOptions = {
     from: `"FEP Tracker" <${GMAIL_EMAIL.value()}>`,
     to,

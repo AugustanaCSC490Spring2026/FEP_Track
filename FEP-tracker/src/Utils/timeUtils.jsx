@@ -14,7 +14,6 @@ export  function timeFormat(time) {
   }
 
 export  const formatTo12Hr = (timeStr) => {
-  console.log("Formatting time:", timeStr);
     if (!timeStr || timeStr === "--:--:--") return timeStr;
     const [h, m, s] = timeStr.split(":");
     const hour = parseInt(h, 10);

@@ -5,7 +5,7 @@ const { calendarAssignedTemplate } = require("./email_templates");
 const { GMAIL_EMAIL, GMAIL_PASSWORD, sendEmail } = require("./email_service");
 const ENABLE_EMAILS = true;
 
-exports.sendCalendarInvite = onDocumentUpdated(
+const sendCalendarInvite = onDocumentUpdated(
   {
     document: "upcoming_events/{jobId}",
     secrets: [GMAIL_EMAIL, GMAIL_PASSWORD],
@@ -130,3 +130,5 @@ exports.sendCalendarInvite = onDocumentUpdated(
 function buildDateTime(date, time) {
   return `${date}T${time}:00`;
 }
+
+module.exports = { sendCalendarInvite };

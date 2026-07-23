@@ -647,7 +647,7 @@ function Home({ user }) {
                 className="shadow-sm"
                 onClick={handleToggleJobForm}
               >
-               + Add Job"
+               + Add Job
               </Button>
             )}
           </div>

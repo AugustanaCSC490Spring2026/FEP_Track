@@ -140,12 +140,17 @@ function StaffPeriodDetails({ period }) {
         const resolved = await Promise.all(
           Object.entries(attendance).map(async ([uid, entries]) => {
             let name = uid;
+           
             try {
               const userDoc = await getDoc(doc(database, "users", uid));
               if (userDoc.exists()) name = userDoc.data().name;
             } catch {
-              // ignore errors and just use UID as name
+              name = "Unknown User";
             }
+            if (name===uid) {
+              name = "Unknown User"; //since it might be that the ui is not displaying the name correctly
+            }
+          
             const totalMins = entries.reduce((sum, e) => sum + (e.hours ?? 0) * 60 + (e.minutes ?? 0), 0);
             const hours = Math.floor(totalMins / 60);
             const minutes = totalMins % 60;

@@ -9,7 +9,7 @@ const {
 const { newUserTemplate } = require("./email_templates");
 const ENABLE_EMAILS = true;
 
-exports.sendNewUserEmail = onDocumentCreated(
+const sendNewUserEmail = onDocumentCreated(
   {
     document: "users/{userId}",
     secrets: [GMAIL_EMAIL, GMAIL_PASSWORD],
@@ -33,17 +33,19 @@ exports.sendNewUserEmail = onDocumentCreated(
         try {
         const email = newUserTemplate(user);
 
-        await sendEmail({
+        const info = await sendEmail({
             to: user.email,
             subject: email.subject,
             text: email.text,
             html: email.html,
         });
-
-        console.log(` Email sent to ${user.email}`);
+       
         } catch (err) {
         console.error(" Failed to send new user email:", err);
         }
     }
   }
 );
+
+
+module.exports = { sendNewUserEmail };

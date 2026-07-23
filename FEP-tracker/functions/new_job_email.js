@@ -10,7 +10,7 @@ const { newJobTemplate } = require("./email_templates");
 const ENABLE_EMAILS = true;
 
 
-exports.sendJobEmail = onDocumentCreated(
+const sendJobEmail = onDocumentCreated(
   {
     document: "upcoming_events/{jobId}",
     secrets: [GMAIL_EMAIL, GMAIL_PASSWORD],
@@ -40,3 +40,4 @@ exports.sendJobEmail = onDocumentCreated(
     }
   }
 );
+module.exports = { sendJobEmail };

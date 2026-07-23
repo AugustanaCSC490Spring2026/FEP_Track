@@ -1,8 +1,7 @@
-
 function formatTimeRange(timeRange) {
   if (!timeRange) return "TBD";
 
-  const [start, end] = timeRange.split("–").map(t => t.trim());
+  const [start, end] = timeRange.split("–").map((t) => t.trim());
 
   return `${toAMPM(start)} – ${toAMPM(end)}`;
 }
@@ -18,7 +17,6 @@ function toAMPM(time24) {
 
   return `${hour}:${m} ${ampm}`;
 }
-
 
 function newJobTemplate(job) {
   return {
@@ -70,7 +68,7 @@ Please log in to view details and apply.
 
         </div>
       </div>
-    `
+    `,
   };
 }
 
@@ -129,7 +127,7 @@ Log in to claim this position.
 
         </div>
       </div>
-    `
+    `,
   };
 }
 
@@ -217,11 +215,13 @@ Welcome to FEP Tracker!
 
 Your account has been successfully created.
 
-You can now log in and begin applying for available jobs.
 
 ----------------------------------------
 
 Email: ${user.email || "Your registered email"}
+Name: ${user.name || "Your name"}
+You can now log in and begin applying for available jobs.
+The link to the login page is: https://fep-tracker.web.app
 
 ----------------------------------------
 
@@ -245,9 +245,11 @@ Welcome aboard!
   <div style="padding:18px;">
 
     <p>Your account has been successfully created.</p>
-
+    <p>You can now log in and begin applying for available jobs. <br>
+The link to the login page is: https://fep-tracker.web.app</p>
     <div style="background:#f3f4f6; padding:12px; border-radius:6px;">
       <p><strong>Email:</strong> ${user.email || "Your registered email"}</p>
+      <p><strong>Name:</strong> ${user.name || "Your name"}</p>
     </div>
 
     <div style="margin-top:16px;">

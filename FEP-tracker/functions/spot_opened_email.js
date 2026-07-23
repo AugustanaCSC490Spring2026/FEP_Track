@@ -10,7 +10,7 @@ const { spotOpenedTemplate } = require("./email_templates");
 const ENABLE_EMAILS = false;
 
 
-exports.sendSpotOpenedEmail = onDocumentUpdated(
+const sendSpotOpenedEmail = onDocumentUpdated(
   {
     document: "upcoming_events/{jobId}",
     secrets: [GMAIL_EMAIL, GMAIL_PASSWORD],
@@ -45,3 +45,4 @@ exports.sendSpotOpenedEmail = onDocumentUpdated(
     }
   }
 );
+module.exports = { sendSpotOpenedEmail }; 
