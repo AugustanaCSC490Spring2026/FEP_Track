@@ -23,7 +23,6 @@ function Students({ user }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("pending");
-  const [phone, setPhone] = useState("");
   const [ID, setID] = useState("");
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,13 +38,12 @@ function Students({ user }) {
   });
 
   const [editModal, setEditModal] = useState({ show: false, student: null });
-  const [editForm, setEditForm] = useState({ name: "", email: "", phone: "", ID: "" });
+  const [editForm, setEditForm] = useState({ name: "", email: "",  ID: "" });
 
   const openEditModal = (student) => {
     setEditForm({
       name: student.name || "",
       email: student.email || "",
-      phone: student.phone || "",
       ID: student.ID || "",
     });
     setEditModal({ show: true, student });
@@ -60,7 +58,6 @@ function Students({ user }) {
       await updateDoc(doc(database, "users", student.id), {
         name: editForm.name,
         email: editForm.email,
-        phone: editForm.phone,
         ID: editForm.ID,
       });
       setStudents(prev =>
@@ -124,11 +121,11 @@ function Students({ user }) {
   const handleAddStudent = async (e) => {
     e.preventDefault();
     if (!email) return;
-    const newUser = { createdAt: serverTimestamp(), name: name || "N/A", email, role, ID, phone };
+    const newUser = { createdAt: serverTimestamp(), name: name || "N/A", email, role, ID };
     try {
       const docRef = await addDoc(collection(database, "users"), newUser);
       setStudents(prev => [...prev, { id: docRef.id, ...newUser }]);
-      setName(""); setID(""); setEmail(""); setPhone(""); setRole("pending"); setShowForm(false);
+      setName(""); setID(""); setEmail(""); setRole("pending"); setShowForm(false);
     } catch (err) { console.error("Error adding user:", err); }
   };
 
@@ -154,7 +151,6 @@ function Students({ user }) {
             name: row.name || "N/A",
             email: row.email,
             role: importedRole,
-            phone: row.phone || row["phone number"] || "",
             ID: row.id || ""
           };
           try {
@@ -237,7 +233,6 @@ function Students({ user }) {
         toDelete.map(s => ({
           name: s.name || "",
           email: s.email || "",
-          phone: s.phone || "",
           ID: s.ID || "",
           role: s.role || "",
           note: notes[s.id] || "",
@@ -334,15 +329,6 @@ function Students({ user }) {
                 value={editForm.email}
                 onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
                 required
-              />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Phone</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="(xxx)-xxx-xxxx"
-                value={editForm.phone}
-                onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
               />
             </Form.Group>
           </Form>
@@ -446,13 +432,6 @@ function Students({ user }) {
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
-              <Form.Control
-                type="text"
-                placeholder="Phone (xxx)-xxx-xxxx"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                required
-              />
               <Form.Select
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
@@ -502,7 +481,7 @@ function Students({ user }) {
         <Table className="mb-0" style={{ fontSize: 14, minWidth: 700 }}>
           <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
             <tr>
-              {["Name", "ID", "Email / Phone", "Role", "Notes", ""].map(h => (
+              {["Name", "ID", "Email ", "Role", "Notes", ""].map(h => (
                 <th
                   key={h}
                   onClick={h === "Role" ? () => setSortByRole(prev => !prev) : undefined}
@@ -552,9 +531,7 @@ function Students({ user }) {
                 <td style={{ padding: "12px 16px", color: "#64748b", verticalAlign: "middle" }}>
                   <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.3 }}>
                     <span>{student.email || "N/A"}</span>
-                    <span style={{ fontSize: 12, color: "#475569" }}>
-                      Phone: {student.phone || "N/A"}
-                    </span>
+                   
                   </div>
                 </td>
                 <td style={{ padding: "12px 16px", verticalAlign: "middle" }}>

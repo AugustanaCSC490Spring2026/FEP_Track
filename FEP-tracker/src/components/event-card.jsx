@@ -65,7 +65,6 @@ export default function EventCard({
         if (userDocSnap.exists()) {
           const userData = userDocSnap.data();
           setSupervisorInfo({
-            phone: userData.phone ?? "No phone listed",
             email: userData.email ?? event.createdByID.email ?? "No email listed",
             name: userData.displayName ?? event.createdByID.displayName
           });
@@ -276,7 +275,7 @@ const deleteEvent = async (id) => {
             <h6><strong>Supervisor Details:</strong></h6>
             <p className="mb-1"><strong>Name:</strong> {supervisorInfo?.name}</p>
             <p className="mb-1"><strong>Email:</strong> {supervisorInfo?.email || "No email provided"}</p>
-            <p className="mb-0"><strong>Phone:</strong> {supervisorInfo?.phone || "No phone provided"}</p>
+            
           </div>
         </Modal.Body>
         <Modal.Footer>
