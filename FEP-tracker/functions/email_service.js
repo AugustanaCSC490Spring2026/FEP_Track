@@ -1,10 +1,9 @@
 const nodemailer = require("nodemailer");
 const { defineSecret } = require("firebase-functions/params");
-
 const GMAIL_EMAIL = defineSecret("GMAIL_EMAIL");
 const GMAIL_PASSWORD = defineSecret("GMAIL_PASSWORD");
-
-
+const admin = require("firebase-admin");
+admin.initializeApp();
 let transporter = null;
 
 function getTransporter() {
@@ -20,6 +19,31 @@ function getTransporter() {
 
   return transporter;
 }
+const database = admin.firestore();
+
+async function getEmailsByRole(role, excludeIds = null) {
+  let query = database.collection("users").where("role", "==", role);
+
+  if (excludeIds && excludeIds.length > 0) {
+    if (excludeIds.length <= 30) {
+      query = query.where("id", "not-in", excludeIds);
+      const snapshot = await query.get();
+      return snapshot.docs.map(doc => doc.data().email).filter(Boolean);
+    } else {
+      // over 30 - not-in won't work, fall back to fetch-all + filter
+      const excludeSet = new Set(excludeIds);
+      const snapshot = await query.get();
+      return snapshot.docs
+        .filter(doc => !excludeSet.has(doc.data().id))
+        .map(doc => doc.data().email)
+        .filter(Boolean);
+    }
+  }
+
+  const snapshot = await query.get();
+  return snapshot.docs.map(doc => doc.data().email).filter(Boolean);
+}
+
 
 async function sendEmail({ to, subject, text, html }) {
   if (!to) {
@@ -74,4 +98,5 @@ module.exports = {
   sendTemplateEmail,
   GMAIL_EMAIL,
   GMAIL_PASSWORD,
+  getEmailsByRole,
 };

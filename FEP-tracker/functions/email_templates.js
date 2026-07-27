@@ -23,44 +23,44 @@ function newJobTemplate(job) {
     subject: `New FEP Opportunity: ${job.title}`,
 
     text: `
-FEP TRACKER NOTIFICATION
+        FEP TRACKER NOTIFICATION
 
-A new job opportunity has been posted.
+        A new job opportunity has been posted.
 
-Title: ${job.title}
-Department: ${job.department || "TBD"}
-Location: ${job.location || "TBD"}
-Date: ${job.date || "TBD"}
-Time: ${formatTimeRange(job.time)}
+        Title: ${job.title}
+        Department: ${job.department || "TBD"}
+        Location: ${job.location || "TBD"}
+        Date: ${job.date || "TBD"}
+        Time: ${formatTimeRange(job.time)}
 
-Additional Information:
-${job.extra_details || "None provided"}
+        Additional Information:
+        ${job.extra_details || "None provided"}
 
-Please log in to view details and apply.
-    `,
+        Please log in to view details and apply.
+            `,
 
     html: `
-      <div style="font-family: Arial; max-width:600px; margin:auto; background:#fff; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
-        
-        <div style="background:#2563eb; padding:14px; color:white;">
-          <h2 style="margin:0;">New FEP Opportunity</h2>
-        </div>
+        <div style="font-family: Arial; max-width:600px; margin:auto; background:#fff; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
 
-        <div style="padding:18px;">
+              <div style="background:#2563eb; padding:14px; color:white;">
+                  <h2 style="margin:0;">New FEP Opportunity</h2>
+              </div>
 
-          <p>A new job opportunity has been posted.</p>
+              <div style="padding:18px;">
 
-          <div style="background:#f3f4f6; padding:12px; border-radius:6px;">
-            <p><strong>Title:</strong> ${job.title}</p>
-            <p><strong>Department:</strong> ${job.department || "TBD"}</p>
-            <p><strong>Location:</strong> ${job.location || "TBD"}</p>
-            <p><strong>Date:</strong> ${job.date || "TBD"}</p>
-            <p><strong>Time:</strong> ${formatTimeRange(job.time)}</p>
-          </div>
+                  <p>A new job opportunity has been posted.</p>
 
-          <p style="margin-top:12px;"><strong>Extra Information: </strong>
-            ${job.extra_details || "No additional information provided."}
-          </p>
+                  <div style="background:#f3f4f6; padding:12px; border-radius:6px;">
+                    <p><strong>Title:</strong> ${job.title}</p>
+                    <p><strong>Department:</strong> ${job.department || "TBD"}</p>
+                    <p><strong>Location:</strong> ${job.location || "TBD"}</p>
+                    <p><strong>Date:</strong> ${job.date || "TBD"}</p>
+                    <p><strong>Time:</strong> ${formatTimeRange(job.time)}</p>
+                  </div>
+
+                  <p style="margin-top:12px;"><strong>Extra Information: </strong>
+                    ${job.extra_details || "No additional information provided."}
+                  </p>
 
           <p style="margin-top:16px; font-size:12px; color:#6b7280;">
             Please log in to the FEP Tracker dashboard to apply.
@@ -68,7 +68,7 @@ Please log in to view details and apply.
 
         </div>
       </div>
-    `,
+     `,
   };
 }
 
@@ -131,6 +131,69 @@ Log in to claim this position.
   };
 }
 
+function spotOpenedTemplateAdmin(job, droppedUsers = []) {
+  const droppedNames =
+    droppedUsers.map((u) => u.name || u.email || u.id).join(", ") ||
+    "A student";
+
+  return {
+    subject: `Spot Opened: ${job.title}`,
+
+    text: `
+FEP TRACKER NOTIFICATION
+
+${droppedNames} dropped out of the following job, opening a spot.
+
+Title: ${job.title}
+Department: ${job.department || "TBD"}
+Location: ${job.location || "TBD"}
+Date: ${job.date || "TBD"}
+Time: ${formatTimeRange(job.time)}
+
+Additional Information:
+${job.extra_details || "None provided."}
+
+Log in to the FEP Tracker dashboard to view or reassign this spot.
+    `,
+
+    html: `
+      <div style="font-family: Arial; max-width:600px; margin:auto; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
+
+        <div style="background:#dc2626; color:white; padding:14px;">
+          <h2 style="margin:0;">Spot Now Available</h2>
+        </div>
+
+        <div style="padding:18px;">
+
+          <p><strong>${droppedNames}</strong> dropped out of the following job, opening a spot:</p>
+
+          <div style="background:#f3f4f6; padding:12px; border-radius:6px;">
+            <p><strong>Title:</strong> ${job.title}</p>
+            <p><strong>Department:</strong> ${job.department || "TBD"}</p>
+            <p><strong>Location:</strong> ${job.location || "TBD"}</p>
+            <p><strong>Date:</strong> ${job.date || "TBD"}</p>
+            <p><strong>Time:</strong> ${formatTimeRange(job.time)}</p>
+          </div>
+
+          <div style="margin-top:16px;">
+            <p style="margin:0 0 6px 0; font-weight:bold;">
+              Additional Information
+            </p>
+            <p style="margin:0; color:#374151;">
+              ${job.extra_details || "None provided."}
+            </p>
+          </div>
+
+          <p style="margin-top:16px; font-size:12px; color:#6b7280;">
+            Log in to the FEP Tracker dashboard to view or reassign this spot.
+          </p>
+
+        </div>
+      </div>
+     `,
+  };
+}
+/* This template is used for both calendar assignment and acceptance notifications */
 function calendarAssignedTemplate(job, calendarAdded = false) {
   const calendarTextLine = calendarAdded
     ? "This job has also been added to your Google Calendar."
@@ -271,9 +334,56 @@ The link to the login page is: https://fep-tracker.web.app</p>
   };
 }
 
+function rejectionTemplate(job) {
+  return {
+    subject: "Your Application Has Been Rejected",
+
+    text: `
+Your application for the position "${job.title || "TBD"}" has been rejected.
+
+We appreciate your interest in the shift, but we regret to inform you that we cannot offer you a shift at this time.
+
+If you have any questions, please contact your supervisor.
+
+Best regards,
+The FEP Tracker Team
+    `,
+
+    html: `
+<div style="font-family: Arial; max-width:600px; margin:auto; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
+
+  <div style="background:#dc2626; color:white; padding:14px;">
+    <h2 style="margin:0;">Your Application Has Been Rejected</h2>
+  </div>
+
+  <div style="padding:18px;">
+
+    <p>Your application for the position "${job.title || "TBD"}" has been rejected.</p>
+    <p>We appreciate your interest in the shift, but we regret to inform you that we cannot offer you a shift at this time.</p>
+
+    <div style="background:#f3f4f6; padding:12px; border-radius:6px;">
+      <p><strong>Job Title:</strong> ${job.title || "TBD"}</p>
+      <p><strong>Department:</strong> ${job.department || "TBD"}</p>
+      <p><strong>Location:</strong> ${job.location || "TBD"}</p>
+      <p><strong>Date:</strong> ${job.date || "TBD"}</p>
+      <p><strong>Time:</strong> ${formatTimeRange(job.time) || "TBD"}</p>
+    </div>
+
+    <p style="margin-top:16px; font-size:12px; color:#6b7280;">
+      If you have any questions, please contact your supervisor.
+    </p>
+
+  </div>
+</div>
+    `,
+  };
+}
+
 module.exports = {
   newJobTemplate,
   spotOpenedTemplate,
   calendarAssignedTemplate,
   newUserTemplate,
+  rejectionTemplate,
+  spotOpenedTemplateAdmin
 };

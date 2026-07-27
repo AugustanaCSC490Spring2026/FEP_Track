@@ -4,11 +4,10 @@ const {
   sendEmail,
   GMAIL_EMAIL,
   GMAIL_PASSWORD,
-} = require("./email_service"); 
+  getEmailsByRole,
+} = require("./email_service");
 
-const { spotOpenedTemplate } = require("./email_templates");
-const ENABLE_EMAILS = false;
-
+const { spotOpenedTemplate,spotOpenedTemplateAdmin } = require("./email_templates");
 
 const sendSpotOpenedEmail = onDocumentUpdated(
   {
@@ -19,30 +18,67 @@ const sendSpotOpenedEmail = onDocumentUpdated(
     const before = event.data.before?.data() || {};
     const after = event.data.after?.data() || {};
 
-    const beforeCount = (before.students || []).length;
-    const afterCount = (after.students || []).length;
+    const beforeStudents = before.students || [];
+    const afterStudents = after.students || [];
 
-    if (afterCount >= beforeCount) {
+    if (afterStudents.length >= beforeStudents.length) {
+      return; // no drop happened
+    }
+
+    // find who actually left
+    const droppedIds = beforeStudents.filter(
+      (id) => !afterStudents.includes(id),
+    );
+
+    if (droppedIds.length === 0) {
+      console.log("Count dropped but no removed ID found → exit");
       return;
     }
 
-    console.log("Spot opened → sending email");
-    if (ENABLE_EMAILS){
-      try {
-        const email = spotOpenedTemplate(after);
+    console.log("Spot opened → student(s) dropped:", droppedIds);
 
-        await sendEmail({
-          to: GMAIL_EMAIL.value(),
-          subject: email.subject,
-          text: email.text,
-          html: email.html,
-        });
+    const db = getFirestore();
 
-        console.log(" Spot opened email sent");
-      } catch (err) {
-        console.error(" Failed to send spot opened email:", err);
-      }
+  
+    const droppedUsers = await Promise.all(
+      droppedIds.map(async (id) => {
+        const snap = await db.collection("users").doc(id).get();
+        return snap.exists ? { id, ...snap.data() } : { id };
+      }),
+    );
+
+    if (!ENABLE_EMAILS) {
+      console.log("Emails disabled → skipping send");
+      return;
     }
-  }
+
+    try {
+      const admins = await getEmailsByRole("admin");
+      const students = await getEmailsByRole("student", afterStudents); // exclude currently-assigned students
+
+      const studentEmail = spotOpenedTemplate(after);
+      await sendEmail({
+        to: students,
+        subject: studentEmail.subject,
+        text: studentEmail.text,
+        html: studentEmail.html,
+      });
+      console.log("Spot opened email sent to", students.length, "students");
+
+      const adminEmail = spotOpenedTemplateAdmin(after, droppedUsers);
+      await sendEmail({
+        to: admins,
+        subject: adminEmail.subject,
+        text: adminEmail.text,
+        html: adminEmail.html,
+      });
+      console.log(
+        "Admin notified of drop:",
+        droppedUsers.map((u) => u.email || u.id),
+      );
+    } catch (err) {
+      console.error("Failed to send spot opened email:", err);
+    }
+  },
 );
-module.exports = { sendSpotOpenedEmail }; 
+module.exports = { sendSpotOpenedEmail };

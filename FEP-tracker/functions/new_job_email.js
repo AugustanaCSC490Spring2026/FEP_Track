@@ -4,6 +4,7 @@ const {
   sendTemplateEmail,
   GMAIL_EMAIL,
   GMAIL_PASSWORD,
+  getEmailsByRole
 } = require("./email_service");
 
 const { newJobTemplate } = require("./email_templates");
@@ -19,7 +20,7 @@ const sendJobEmail = onDocumentCreated(
     console.log(" NEW JOB EMAIL TRIGGER");
 
     const job = event.data.data();
-
+    const students = await getEmailsByRole("student");
     if (!job) {
       console.log("No job data → exit");
       return;
@@ -28,12 +29,12 @@ const sendJobEmail = onDocumentCreated(
       try {
         
         await sendTemplateEmail({
-          to: GMAIL_EMAIL.value(), 
+          to: students, 
           template: newJobTemplate,
           data: job,
         });
 
-        console.log(" Job email sent");
+        console.log(" Job email sent",students.length);
       } catch (err) {
         console.error(" Failed to send job email:", err);
       }
