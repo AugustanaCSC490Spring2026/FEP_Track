@@ -1,13 +1,18 @@
 const { onDocumentUpdated } = require("firebase-functions/v2/firestore");
-
+const { getFirestore } = require("firebase-admin/firestore");
 const {
   sendEmail,
   GMAIL_EMAIL,
   GMAIL_PASSWORD,
   getEmailsByRole,
+  getStudentsNames,
 } = require("./email_service");
 
-const { spotOpenedTemplate,spotOpenedTemplateAdmin } = require("./email_templates");
+const {
+  spotOpenedTemplate,
+  spotOpenedTemplateAdmin,
+  droppedOrRemovedTemplate,
+} = require("./email_templates");
 
 const sendSpotOpenedEmail = onDocumentUpdated(
   {
@@ -25,7 +30,9 @@ const sendSpotOpenedEmail = onDocumentUpdated(
       return; // no drop happened
     }
 
-    // find who actually left
+    console.log("Before students:", beforeStudents);
+    console.log("After students:", afterStudents);
+    // find who actually left in the case of a removal only they should be notified differently
     const droppedIds = beforeStudents.filter(
       (id) => !afterStudents.includes(id),
     );
@@ -37,25 +44,16 @@ const sendSpotOpenedEmail = onDocumentUpdated(
 
     console.log("Spot opened → student(s) dropped:", droppedIds);
 
-    const db = getFirestore();
-
-  
-    const droppedUsers = await Promise.all(
-      droppedIds.map(async (id) => {
-        const snap = await db.collection("users").doc(id).get();
-        return snap.exists ? { id, ...snap.data() } : { id };
-      }),
-    );
-
-    if (!ENABLE_EMAILS) {
-      console.log("Emails disabled → skipping send");
-      return;
-    }
-
+    const droppedUsers = await getStudentsNames(droppedIds);
+    console.log("Dropped users:", droppedUsers);
+    const droppedUserEmails = droppedUsers
+      .map((user) => user.email)
+      .filter(Boolean);
+    console.log("Dropped user emails:", droppedUserEmails);
     try {
       const admins = await getEmailsByRole("admin");
       const students = await getEmailsByRole("student", afterStudents); // exclude currently-assigned students
-
+      // get emails of students who dropped or were removed
       const studentEmail = spotOpenedTemplate(after);
       await sendEmail({
         to: students,
@@ -72,6 +70,15 @@ const sendSpotOpenedEmail = onDocumentUpdated(
         text: adminEmail.text,
         html: adminEmail.html,
       });
+      if (droppedUserEmails.length > 0) {
+        const droppedOrRemoved = droppedOrRemovedTemplate(after, droppedUsers);
+        await sendEmail({
+          to: droppedUserEmails,
+          subject: droppedOrRemoved.subject,
+          text: droppedOrRemoved.text,
+          html: droppedOrRemoved.html,
+        });
+      }
       console.log(
         "Admin notified of drop:",
         droppedUsers.map((u) => u.email || u.id),

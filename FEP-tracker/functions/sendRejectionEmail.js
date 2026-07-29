@@ -1,4 +1,14 @@
 const { rejectionTemplate } = require("./email_templates");
+const { onDocumentUpdated } = require("firebase-functions/v2/firestore");
+const { getFirestore } = require("firebase-admin/firestore");
+const {
+  sendEmail,
+  GMAIL_EMAIL,
+  GMAIL_PASSWORD,
+  getEmailsByRole,
+  getStudentsNames,
+  getEmailsByRoleAndIds
+} = require("./email_service");
 
 const sendRejectionEmail = onDocumentUpdated(
   {
@@ -10,12 +20,10 @@ const sendRejectionEmail = onDocumentUpdated(
 
     const before = event.data.before?.data() || {};
     const after = event.data.after?.data() || {};
-
-    const beforeRejected = before.rejectedStudents || [];
-    const afterRejected = after.rejectedStudents || [];
-
+    const beforeRejected = before.pending_students || [];
+    const afterRejected = after.pending_students || [];
     const newlyRejected = afterRejected.filter(
-      (id) => !beforeRejected.includes(id)
+      (id) => !beforeRejected.includes(id) && !event.data.after.students.includes(id),
     );
 
     if (newlyRejected.length === 0) {
@@ -28,34 +36,33 @@ const sendRejectionEmail = onDocumentUpdated(
     const job = after;
 
     const emailContent = rejectionTemplate(job);
-    if (ENABLE_EMAILS) {
-      await Promise.all(
-        newlyRejected.map(async (userId) => {
-          try {
-            const userSnap = await db.collection("users").doc(userId).get();
-            const user = userSnap.data();
 
-            if (!user?.email) {
-              console.log(`User ${userId} missing email`);
-              return;
-            }
+    await Promise.all(
+      newlyRejected.map(async (userId) => {
+        try {
+          const userSnap = await db.collection("users").doc(userId).get();
+          const user = userSnap.data();
 
-            const emailContent = rejectionTemplate(job);
-            await sendEmail({
-              to: user.email,
-              subject: emailContent.subject,
-              text: emailContent.text,
-              html: emailContent.html,
-            });
-
-            console.log(`Rejection email sent to ${user.email}`);
-          } catch (err) {
-            console.error(`Failed for user ${userId}:`, err);
+          if (!user?.email) {
+            console.log(`User ${userId} missing email`);
+            return;
           }
-        })
-      );
-    }
-  }
+
+          const emailContent = rejectionTemplate(job);
+          await sendEmail({
+            to: user.email,
+            subject: emailContent.subject,
+            text: emailContent.text,
+            html: emailContent.html,
+          });
+
+          console.log(`Rejection email sent to ${user.email}`);
+        } catch (err) {
+          console.error(`Failed for user ${userId}:`, err);
+        }
+      }),
+    );
+  },
 );
 
 module.exports = { sendRejectionEmail };

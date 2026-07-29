@@ -379,11 +379,53 @@ The FEP Tracker Team
   };
 }
 
+function droppedOrRemovedTemplate(job, droppedUsers) {
+  return {
+    subject: "You Have Been Removed or Dropped the Position",
+
+    text: `
+You have been removed or dropped from the position "${job.title || "TBD"}".
+
+The following students have dropped or been removed from the position:
+${droppedUsers.map((u) => u.name || u.email || u.id).join("\n")}
+
+If you have any questions, please contact your supervisor.
+
+Best regards,
+The FEP Tracker Team
+    `,
+
+    html: `
+<div style="font-family: Arial; max-width:600px; margin:auto; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
+
+  <div style="background:#f59e0b; color:white; padding:14px;">
+    <h2 style="margin:0;">You Have Been Removed or Dropped the Position</h2>
+  </div>
+
+  <div style="padding:18px;">
+
+    <p>You have been removed or dropped from the position "${job.title || "TBD"}".</p>
+
+    <p>The following students have dropped or been removed from the position:</p>
+    <ul>
+      ${droppedUsers.map((u) => `<li>${u.name || u.email || u.id}</li>`).join("")}
+    </ul>
+
+    <p style="margin-top:16px; font-size:12px; color:#6b7280;">
+      If you have any questions, please contact your supervisor.
+    </p>
+
+  </div>
+</div>
+    `,
+  };
+}
 module.exports = {
   newJobTemplate,
   spotOpenedTemplate,
   calendarAssignedTemplate,
   newUserTemplate,
   rejectionTemplate,
-  spotOpenedTemplateAdmin
+  spotOpenedTemplateAdmin,
+  droppedOrRemovedTemplate,
 };

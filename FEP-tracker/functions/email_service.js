@@ -5,7 +5,7 @@ const GMAIL_PASSWORD = defineSecret("GMAIL_PASSWORD");
 const admin = require("firebase-admin");
 admin.initializeApp();
 let transporter = null;
-
+const { FieldPath } = require("firebase-admin/firestore");
 function getTransporter() {
   if (transporter) return transporter;
 
@@ -21,6 +21,16 @@ function getTransporter() {
 }
 const database = admin.firestore();
 
+async function getStudentsNames(studentIds) {
+  if (!studentIds.length) return [];
+  const snapshot = await database
+    .collection("users")
+    .where(FieldPath.documentId(), "in", studentIds)
+    .get();
+  console.log("Retrieved students:", snapshot.docs.length);
+  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+}
+
 async function getEmailsByRole(role, excludeIds = null) {
   let query = database.collection("users").where("role", "==", role);
 
@@ -28,22 +38,21 @@ async function getEmailsByRole(role, excludeIds = null) {
     if (excludeIds.length <= 30) {
       query = query.where("id", "not-in", excludeIds);
       const snapshot = await query.get();
-      return snapshot.docs.map(doc => doc.data().email).filter(Boolean);
+      return snapshot.docs.map((doc) => doc.data().email).filter(Boolean);
     } else {
       // over 30 - not-in won't work, fall back to fetch-all + filter
       const excludeSet = new Set(excludeIds);
       const snapshot = await query.get();
       return snapshot.docs
-        .filter(doc => !excludeSet.has(doc.data().id))
-        .map(doc => doc.data().email)
+        .filter((doc) => !excludeSet.has(doc.data().id))
+        .map((doc) => doc.data().email)
         .filter(Boolean);
     }
   }
 
   const snapshot = await query.get();
-  return snapshot.docs.map(doc => doc.data().email).filter(Boolean);
+  return snapshot.docs.map((doc) => doc.data().email).filter(Boolean);
 }
-
 
 async function sendEmail({ to, subject, text, html }) {
   if (!to) {
@@ -82,7 +91,6 @@ async function sendEmail({ to, subject, text, html }) {
   }
 }
 
-
 async function sendTemplateEmail({ to, template, data }) {
   if (typeof template !== "function") {
     throw new Error("Template must be a function");
@@ -99,4 +107,5 @@ module.exports = {
   GMAIL_EMAIL,
   GMAIL_PASSWORD,
   getEmailsByRole,
+  getStudentsNames
 };

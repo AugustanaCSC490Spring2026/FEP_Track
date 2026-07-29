@@ -8,7 +8,7 @@ const { sendJobEmail } = require("./new_job_email");
 const { sendSpotOpenedEmail } = require("./spot_opened_email");
 const { sendCalendarInvite } = require("./send_calendar_invite");
 const { sendNewUserEmail } = require("./send_new_user_email");
-
+const { sendRejectionEmail } = require('./sendRejectionEmail');
 
 initializeApp();
 setGlobalOptions({ maxInstances: 10 });
@@ -22,3 +22,4 @@ exports.sendJobEmail = sendJobEmail;
 exports.sendSpotOpenedEmail = sendSpotOpenedEmail;
 exports.sendCalendarInvite = sendCalendarInvite;
 exports.sendNewUserEmail = sendNewUserEmail;
+exports.sendRejectionEmail = sendRejectionEmail;
