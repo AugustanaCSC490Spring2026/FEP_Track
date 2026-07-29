@@ -32,11 +32,15 @@ async function getStudentsNames(studentIds) {
 }
 
 async function getEmailsByRole(role, excludeIds = null) {
+  if (!role) {
+    throw new Error("Missing 'role'");
+  }
+
   let query = database.collection("users").where("role", "==", role);
 
   if (excludeIds && excludeIds.length > 0) {
     if (excludeIds.length <= 30) {
-      query = query.where("id", "not-in", excludeIds);
+      query = query.where(FieldPath.documentId(), "not-in", excludeIds);
       const snapshot = await query.get();
       return snapshot.docs.map((doc) => doc.data().email).filter(Boolean);
     } else {
