@@ -77,20 +77,20 @@ function spotOpenedTemplate(job) {
     subject: `Spot Available: ${job.title}`,
 
     text: `
-FEP TRACKER NOTIFICATION
+        FEP TRACKER NOTIFICATION
 
-A spot has opened for the following job.
+        A spot has opened for the following job.
 
-Title: ${job.title}
-Department: ${job.department || "TBD"}
-Location: ${job.location || "TBD"}
-Date: ${job.date || "TBD"}
-Time: ${formatTimeRange(job.time)}
+        Title: ${job.title}
+        Department: ${job.department || "TBD"}
+        Location: ${job.location || "TBD"}
+        Date: ${job.date || "TBD"}
+        Time: ${formatTimeRange(job.time)}
 
-Additional Information:
-${job.extra_details || "None provided."}
+        Additional Information:
+        ${job.extra_details || "None provided."}
 
-Log in to claim this position.
+        Log in to claim this position. Link: https://fep-tracker.web.app
     `,
 
     html: `
@@ -122,7 +122,8 @@ Log in to claim this position.
           </div>
 
           <p style="margin-top:16px; font-size:12px; color:#6b7280;">
-            Log in to the FEP Tracker dashboard to claim this spot.
+            Log in to the FEP Tracker dashboard to claim this spot. <br>
+            Link: https://fep-tracker.web.app
           </p>
 
         </div>
@@ -132,6 +133,7 @@ Log in to claim this position.
 }
 
 function spotOpenedTemplateAdmin(job, droppedUsers = []) {
+  //dropped users will probably be only one user each time but we'll handle multiple just in case
   const droppedNames =
     droppedUsers.map((u) => u.name || u.email || u.id).join(", ") ||
     "A student";
@@ -140,20 +142,21 @@ function spotOpenedTemplateAdmin(job, droppedUsers = []) {
     subject: `Spot Opened: ${job.title}`,
 
     text: `
-FEP TRACKER NOTIFICATION
+      FEP TRACKER NOTIFICATION
 
-${droppedNames} dropped out of the following job, opening a spot.
+      ${droppedNames} dropped out of the following job, opening a spot.
 
-Title: ${job.title}
-Department: ${job.department || "TBD"}
-Location: ${job.location || "TBD"}
-Date: ${job.date || "TBD"}
-Time: ${formatTimeRange(job.time)}
+      Title: ${job.title}
+      Department: ${job.department || "TBD"}
+      Location: ${job.location || "TBD"}
+      Date: ${job.date || "TBD"}
+      Time: ${formatTimeRange(job.time)}
 
-Additional Information:
-${job.extra_details || "None provided."}
+      Additional Information:
+      ${job.extra_details || "None provided."}
 
-Log in to the FEP Tracker dashboard to view or reassign this spot.
+      Log in to the FEP Tracker dashboard to view or reassign this spot. <br>
+      Link: https://fep-tracker.web.app
     `,
 
     html: `
@@ -185,7 +188,8 @@ Log in to the FEP Tracker dashboard to view or reassign this spot.
           </div>
 
           <p style="margin-top:16px; font-size:12px; color:#6b7280;">
-            Log in to the FEP Tracker dashboard to view or reassign this spot.
+            Log in to the FEP Tracker dashboard to view or reassign this spot. <br>
+            Link: https://fep-tracker.web.app
           </p>
 
         </div>
@@ -207,64 +211,64 @@ function calendarAssignedTemplate(job, calendarAdded = false) {
     subject: `Job Assignment Confirmed: ${job.title}`,
 
     text: `
-Job Assignment Confirmed
+        Job Assignment Confirmed
 
-You have been successfully assigned to a job.
+        You have been successfully assigned to a job.
 
-----------------------------------------
+        ----------------------------------------
 
-Job Title:   ${job.title || "TBD"}
-Department:  ${job.department || "TBD"}
-Location:    ${job.location || "TBD"}
-Date:        ${job.date || "TBD"}
-Time:        ${formatTimeRange(job.time) || "TBD"}
+        Job Title:   ${job.title || "TBD"}
+        Department:  ${job.department || "TBD"}
+        Location:    ${job.location || "TBD"}
+        Date:        ${job.date || "TBD"}
+        Time:        ${formatTimeRange(job.time) || "TBD"}
 
-----------------------------------------
+        ----------------------------------------
 
-Additional Information:
-${job.extra_details || "None provided"}
+        Additional Information:
+        ${job.extra_details || "None provided"}
 
-----------------------------------------
+        ----------------------------------------
 
-${calendarTextLine}
+        ${calendarTextLine}
 
-If you have any questions, please contact your supervisor.
+        If you have any questions, please contact your supervisor.
     `,
 
     html: `
-<div style="font-family: Arial; max-width:600px; margin:auto; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
+      <div style="font-family: Arial; max-width:600px; margin:auto; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
 
-  <div style="background:#0d6efd; color:white; padding:14px;">
-    <h2 style="margin:0;">Job Assignment Confirmed</h2>
-  </div>
+        <div style="background:#0d6efd; color:white; padding:14px;">
+          <h2 style="margin:0;">Job Assignment Confirmed</h2>
+        </div>
 
-  <div style="padding:18px;">
+        <div style="padding:18px;">
 
-    <p>You have been successfully assigned to a job.</p>
+          <p>You have been successfully assigned to a job.</p>
 
-    <div style="background:#f3f4f6; padding:12px; border-radius:6px;">
-      <p style="margin:0 0 6px 0;"><strong>Job Title:</strong> ${job.title || "TBD"}</p>
-      <p style="margin:0 0 6px 0;"><strong>Department:</strong> ${job.department || "TBD"}</p>
-      <p style="margin:0 0 6px 0;"><strong>Location:</strong> ${job.location || "TBD"}</p>
-      <p style="margin:0 0 6px 0;"><strong>Date:</strong> ${job.date || "TBD"}</p>
-      <p style="margin:0;"><strong>Time:</strong> ${formatTimeRange(job.time) || "TBD"}</p>
-    </div>
+          <div style="background:#f3f4f6; padding:12px; border-radius:6px;">
+            <p style="margin:0 0 6px 0;"><strong>Job Title:</strong> ${job.title || "TBD"}</p>
+            <p style="margin:0 0 6px 0;"><strong>Department:</strong> ${job.department || "TBD"}</p>
+            <p style="margin:0 0 6px 0;"><strong>Location:</strong> ${job.location || "TBD"}</p>
+            <p style="margin:0 0 6px 0;"><strong>Date:</strong> ${job.date || "TBD"}</p>
+            <p style="margin:0;"><strong>Time:</strong> ${formatTimeRange(job.time) || "TBD"}</p>
+          </div>
 
-    <div style="margin-top:16px;">
-      <p style="margin:0 0 6px 0; font-weight:bold;">Additional Information</p>
-      <p style="margin:0;">${job.extra_details || "None provided"}</p>
-    </div>
+          <div style="margin-top:16px;">
+            <p style="margin:0 0 6px 0; font-weight:bold;">Additional Information</p>
+            <p style="margin:0;">${job.extra_details || "None provided"}</p>
+          </div>
 
-    <div style="margin-top:16px; background:#f3f4f6; padding:12px; border-radius:6px;">
-      ${calendarHtmlLine}
-    </div>
+          <div style="margin-top:16px; background:#f3f4f6; padding:12px; border-radius:6px;">
+            ${calendarHtmlLine}
+          </div>
 
-    <p style="margin-top:16px; font-size:12px; color:#6b7280;">
-      If you have any questions, please contact your supervisor.
-    </p>
+          <p style="margin-top:16px; font-size:12px; color:#6b7280;">
+            If you have any questions, please contact your supervisor.
+          </p>
 
-  </div>
-</div>
+        </div>
+      </div>
     `,
   };
 }
@@ -274,62 +278,62 @@ function newUserTemplate(user) {
     subject: "Welcome to FEP Tracker",
 
     text: `
-Welcome to FEP Tracker!
+      Welcome to FEP Tracker!
 
-Your account has been successfully created.
+      Your account has been successfully created.
 
 
-----------------------------------------
+      ----------------------------------------
 
-Email: ${user.email || "Your registered email"}
-Name: ${user.name || "Your name"}
-You can now log in and begin applying for available jobs.
-The link to the login page is: https://fep-tracker.web.app
+      Email: ${user.email || "Your registered email"}
+      Name: ${user.name || "Your name"}
+      You can now log in and begin applying for available jobs.
+      The link to the login page is: https://fep-tracker.web.app
 
-----------------------------------------
+      ----------------------------------------
 
-Next Steps:
-- Log in to the platform
-- Browse available jobs
-- Connect your Google Calendar (optional)
+      Next Steps:
+      - Log in to the platform
+      - Browse available jobs
+      - Connect your Google Calendar (optional)
 
-If you have any questions, please contact your administrator.
+      If you have any questions, please contact your administrator.
 
-Welcome aboard!
+      Welcome aboard!
     `,
 
     html: `
-<div style="font-family: Arial; max-width:600px; margin:auto; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
+      <div style="font-family: Arial; max-width:600px; margin:auto; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
 
-  <div style="background:#16a34a; color:white; padding:14px;">
-    <h2 style="margin:0;">Welcome to FEP Tracker</h2>
-  </div>
+        <div style="background:#16a34a; color:white; padding:14px;">
+          <h2 style="margin:0;">Welcome to FEP Tracker</h2>
+        </div>
 
-  <div style="padding:18px;">
+        <div style="padding:18px;">
 
-    <p>Your account has been successfully created.</p>
-    <p>You can now log in and begin applying for available jobs. <br>
-The link to the login page is: https://fep-tracker.web.app</p>
-    <div style="background:#f3f4f6; padding:12px; border-radius:6px;">
-      <p><strong>Email:</strong> ${user.email || "Your registered email"}</p>
-      <p><strong>Name:</strong> ${user.name || "Your name"}</p>
-    </div>
+          <p>Your account has been successfully created.</p>
+          <p>You can now log in and begin applying for available jobs. <br>
+          The link to the login page is: https://fep-tracker.web.app</p>
+          <div style="background:#f3f4f6; padding:12px; border-radius:6px;">
+            <p><strong>Email:</strong> ${user.email || "Your registered email"}</p>
+            <p><strong>Name:</strong> ${user.name || "Your name"}</p>
+          </div>
 
-    <div style="margin-top:16px;">
-      <p style="margin:0 0 6px 0; font-weight:bold;">Next Steps</p>
-      <ul style="margin:0; padding-left:18px;">
-        <li>Log in to the platform</li>
-        <li>Browse available jobs</li>
-        <li>Connect your Google Calendar (optional)</li>
-      </ul>
-    </div>
+          <div style="margin-top:16px;">
+            <p style="margin:0 0 6px 0; font-weight:bold;">Next Steps</p>
+            <ul style="margin:0; padding-left:18px;">
+              <li>Log in to the platform</li>
+              <li>Browse available jobs</li>
+              <li>Connect your Google Calendar (optional)</li>
+            </ul>
+          </div>
 
-    <p style="margin-top:16px; font-size:12px; color:#6b7280;">
-      If you have any questions, please contact your administrator.
-    </p>
+          <p style="margin-top:16px; font-size:12px; color:#6b7280;">
+            If you have any questions, please contact your administrator.
+          </p>
 
-  </div>
-</div>
+        </div>
+      </div>
     `,
   };
 }
@@ -339,84 +343,85 @@ function rejectionTemplate(job) {
     subject: "Your Application Has Been Rejected",
 
     text: `
-Your application for the position "${job.title || "TBD"}" has been rejected.
+        Your application for the position "${job.title || "TBD"}" has been rejected.
 
-We appreciate your interest in the shift, but we regret to inform you that we cannot offer you a shift at this time.
+        We appreciate your interest in the shift, but we regret to inform you that we cannot offer you a shift at this time.
 
-If you have any questions, please contact your supervisor.
+        If you have any questions, please contact  ${job.supervisor || "your supervisor"}.
 
-Best regards,
-The FEP Tracker Team
+        Best regards,
+        The FEP Tracker Team
     `,
 
     html: `
-<div style="font-family: Arial; max-width:600px; margin:auto; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
+      <div style="font-family: Arial; max-width:600px; margin:auto; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
 
-  <div style="background:#dc2626; color:white; padding:14px;">
-    <h2 style="margin:0;">Your Application Has Been Rejected</h2>
-  </div>
+        <div style="background:#dc2626; color:white; padding:14px;">
+          <h2 style="margin:0;">Your Application Has Been Rejected</h2>
+        </div>
 
-  <div style="padding:18px;">
+        <div style="padding:18px;">
 
-    <p>Your application for the position "${job.title || "TBD"}" has been rejected.</p>
-    <p>We appreciate your interest in the shift, but we regret to inform you that we cannot offer you a shift at this time.</p>
+          <p>Your application for the position "${job.title || "TBD"}" has been rejected.</p>
+          <p>We appreciate your interest in the shift, but we regret to inform you that we cannot offer you a shift at this time.</p>
 
-    <div style="background:#f3f4f6; padding:12px; border-radius:6px;">
-      <p><strong>Job Title:</strong> ${job.title || "TBD"}</p>
-      <p><strong>Department:</strong> ${job.department || "TBD"}</p>
-      <p><strong>Location:</strong> ${job.location || "TBD"}</p>
-      <p><strong>Date:</strong> ${job.date || "TBD"}</p>
-      <p><strong>Time:</strong> ${formatTimeRange(job.time) || "TBD"}</p>
-    </div>
+          <div style="background:#f3f4f6; padding:12px; border-radius:6px;">
+            <p><strong>Job Title:</strong> ${job.title || "TBD"}</p>
+            <p><strong>Department:</strong> ${job.department || "TBD"}</p>
+            <p><strong>Location:</strong> ${job.location || "TBD"}</p>
+            <p><strong>Date:</strong> ${job.date || "TBD"}</p>
+            <p><strong>Time:</strong> ${formatTimeRange(job.time) || "TBD"}</p>
+          </div>
 
-    <p style="margin-top:16px; font-size:12px; color:#6b7280;">
-      If you have any questions, please contact your supervisor.
-    </p>
+          <p style="margin-top:16px; font-size:12px; color:#6b7280;">
+            If you have any questions, please contact ${job.supervisor || "your supervisor"}.
+          </p>
 
-  </div>
-</div>
+        </div>
+      </div>
     `,
   };
 }
 
 function droppedOrRemovedTemplate(job, droppedUsers) {
+  // same as the other dropped users just in case of a multiple users
   return {
     subject: "You Have Been Removed or Dropped the Position",
 
     text: `
-You have been removed or dropped from the position "${job.title || "TBD"}".
+      You have been removed or dropped from the position "${job.title || "TBD"}".
 
-The following students have dropped or been removed from the position:
-${droppedUsers.map((u) => u.name || u.email || u.id).join("\n")}
+      The following students have dropped or been removed from the position:
+      ${droppedUsers.map((u) => u.name || u.email || u.id).join("\n")}
 
-If you have any questions, please contact your supervisor.
+      If you have any questions, please contact ${job.supervisor || "your supervisor"}.
 
-Best regards,
-The FEP Tracker Team
+      Best regards,
+      The FEP Tracker Team
     `,
 
     html: `
-<div style="font-family: Arial; max-width:600px; margin:auto; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
+    <div style="font-family: Arial; max-width:600px; margin:auto; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
 
-  <div style="background:#f59e0b; color:white; padding:14px;">
-    <h2 style="margin:0;">You Have Been Removed or Dropped the Position</h2>
-  </div>
+      <div style="background:#f59e0b; color:white; padding:14px;">
+        <h2 style="margin:0;">You Have Been Removed or Dropped the Position</h2>
+      </div>
 
-  <div style="padding:18px;">
+      <div style="padding:18px;">
 
-    <p>You have been removed or dropped from the position "${job.title || "TBD"}".</p>
+        <p>You have been removed or dropped from the position "${job.title || "TBD"}".</p>
 
-    <p>The following students have dropped or been removed from the position:</p>
-    <ul>
-      ${droppedUsers.map((u) => `<li>${u.name || u.email || u.id}</li>`).join("")}
-    </ul>
+        <p>The following students have dropped or been removed from the position:</p>
+        <ul>
+          ${droppedUsers.map((u) => `<li>${u.name || u.email || u.id}</li>`).join("")}
+        </ul>
 
-    <p style="margin-top:16px; font-size:12px; color:#6b7280;">
-      If you have any questions, please contact your supervisor.
-    </p>
+        <p style="margin-top:16px; font-size:12px; color:#6b7280;">
+          If you have any questions, please contact ${job.supervisor || "your supervisor"}.
+        </p>
 
-  </div>
-</div>
+      </div>
+    </div>
     `,
   };
 }

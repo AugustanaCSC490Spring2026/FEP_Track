@@ -1,11 +1,15 @@
 const nodemailer = require("nodemailer");
 const { defineSecret } = require("firebase-functions/params");
-const GMAIL_EMAIL = defineSecret("GMAIL_EMAIL");
-const GMAIL_PASSWORD = defineSecret("GMAIL_PASSWORD");
+// Define secrets for Gmail credentials
+const GMAIL_EMAIL = defineSecret("GMAIL_EMAIL"); // Gmail email: the email address to send emails from
+const GMAIL_PASSWORD = defineSecret("GMAIL_PASSWORD"); // Gmail password: the password for the Gmail account will be set inside the google cloud console and stored securely 
 const admin = require("firebase-admin");
 admin.initializeApp();
+const database = admin.firestore();
 let transporter = null;
-const { FieldPath } = require("firebase-admin/firestore");
+const { FieldPath } = require("firebase-admin/firestore"); // Needed for the doc ids
+
+/* Create a transporter  for sending emails, Uses nodemailer */
 function getTransporter() {
   if (transporter) return transporter;
 
@@ -19,18 +23,20 @@ function getTransporter() {
 
   return transporter;
 }
-const database = admin.firestore();
 
-async function getStudentsNames(studentIds) {
+
+/* Get the students docs by their IDs */
+async function getStudents(studentIds) {
   if (!studentIds.length) return [];
   const snapshot = await database
     .collection("users")
-    .where(FieldPath.documentId(), "in", studentIds)
+    .where(FieldPath.documentId(), "in", studentIds) // Filter by document IDs
     .get();
   console.log("Retrieved students:", snapshot.docs.length);
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 }
 
+/* Get the emails of users by their role */
 async function getEmailsByRole(role, excludeIds = null) {
   if (!role) {
     throw new Error("Missing 'role'");
@@ -39,7 +45,7 @@ async function getEmailsByRole(role, excludeIds = null) {
   let query = database.collection("users").where("role", "==", role);
 
   if (excludeIds && excludeIds.length > 0) {
-    if (excludeIds.length <= 30) {
+    if (excludeIds.length <= 30) { 
       query = query.where(FieldPath.documentId(), "not-in", excludeIds);
       const snapshot = await query.get();
       return snapshot.docs.map((doc) => doc.data().email).filter(Boolean);
@@ -57,6 +63,7 @@ async function getEmailsByRole(role, excludeIds = null) {
   const snapshot = await query.get();
   return snapshot.docs.map((doc) => doc.data().email).filter(Boolean);
 }
+
 
 async function sendEmail({ to, subject, text, html }) {
   if (!to) {
@@ -95,6 +102,7 @@ async function sendEmail({ to, subject, text, html }) {
   }
 }
 
+/* Need to send an email using a template */
 async function sendTemplateEmail({ to, template, data }) {
   if (typeof template !== "function") {
     throw new Error("Template must be a function");
@@ -111,5 +119,5 @@ module.exports = {
   GMAIL_EMAIL,
   GMAIL_PASSWORD,
   getEmailsByRole,
-  getStudentsNames
+  getStudents
 };

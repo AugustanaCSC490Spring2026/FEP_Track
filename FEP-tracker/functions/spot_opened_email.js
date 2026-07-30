@@ -5,7 +5,7 @@ const {
   GMAIL_EMAIL,
   GMAIL_PASSWORD,
   getEmailsByRole,
-  getStudentsNames,
+  getStudents,
 } = require("./email_service");
 
 const {
@@ -44,16 +44,19 @@ const sendSpotOpenedEmail = onDocumentUpdated(
 
     console.log("Spot opened → student(s) dropped:", droppedIds);
 
-    const droppedUsers = await getStudentsNames(droppedIds);
+    const droppedUsers = await getStudents(droppedIds);
     console.log("Dropped users:", droppedUsers);
     const droppedUserEmails = droppedUsers
       .map((user) => user.email)
       .filter(Boolean);
     console.log("Dropped user emails:", droppedUserEmails);
+
     try {
       const admins = await getEmailsByRole("admin");
-      const students = await getEmailsByRole("student", afterStudents); // exclude currently-assigned students
-      // get emails of students who dropped or were removed
+      let students = await getEmailsByRole("student", afterStudents); // exclude currently-assigned students
+      students = students.filter((email) => !droppedUserEmails.includes(email)); // also exclude dropped students, they get their own email
+
+      console.log("Filtered student emails:", students);
       const studentEmail = spotOpenedTemplate(after);
       await sendEmail({
         to: students,

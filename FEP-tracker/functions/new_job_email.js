@@ -4,12 +4,10 @@ const {
   sendTemplateEmail,
   GMAIL_EMAIL,
   GMAIL_PASSWORD,
-  getEmailsByRole
+  getEmailsByRole,
 } = require("./email_service");
 
 const { newJobTemplate } = require("./email_templates");
-const ENABLE_EMAILS = true;
-
 
 const sendJobEmail = onDocumentCreated(
   {
@@ -25,20 +23,18 @@ const sendJobEmail = onDocumentCreated(
       console.log("No job data → exit");
       return;
     }
-    if (ENABLE_EMAILS){
-      try {
-        
-        await sendTemplateEmail({
-          to: students, 
-          template: newJobTemplate,
-          data: job,
-        });
 
-        console.log(" Job email sent",students.length);
-      } catch (err) {
-        console.error(" Failed to send job email:", err);
-      }
+    try {
+      await sendTemplateEmail({
+        to: students,
+        template: newJobTemplate,
+        data: job,
+      });
+
+      console.log(" Job email sent", students.length);
+    } catch (err) {
+      console.error(" Failed to send job email:", err);
     }
-  }
+  },
 );
 module.exports = { sendJobEmail };

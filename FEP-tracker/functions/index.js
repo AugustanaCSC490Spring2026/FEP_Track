@@ -13,6 +13,7 @@ const { sendRejectionEmail } = require('./sendRejectionEmail');
 initializeApp();
 setGlobalOptions({ maxInstances: 10 });
 
+// Register the functions you make in here
 exports.moveTimedOutEventsToPending = moveTimedOutEventsToPending;
 exports.periodCreated = periodCreated;
 exports.periodUpdated = periodUpdated;

@@ -2,12 +2,11 @@ const { rejectionTemplate } = require("./email_templates");
 const { onDocumentUpdated } = require("firebase-functions/v2/firestore");
 const { getFirestore } = require("firebase-admin/firestore");
 const {
-  sendEmail,
+  sendTemplateEmail,
   GMAIL_EMAIL,
   GMAIL_PASSWORD,
   getEmailsByRole,
-  getStudentsNames,
-  getEmailsByRoleAndIds
+  getStudents
 } = require("./email_service");
 
 const sendRejectionEmail = onDocumentUpdated(
@@ -23,7 +22,8 @@ const sendRejectionEmail = onDocumentUpdated(
     const beforeRejected = before.pending_students || [];
     const afterRejected = after.pending_students || [];
     const newlyRejected = afterRejected.filter(
-      (id) => !beforeRejected.includes(id) && !event.data.after.students.includes(id),
+      (id) =>
+        !beforeRejected.includes(id) && !event.data.after.students.includes(id),
     );
 
     if (newlyRejected.length === 0) {
@@ -34,8 +34,6 @@ const sendRejectionEmail = onDocumentUpdated(
     console.log("Newly rejected students:", newlyRejected);
 
     const job = after;
-
-    const emailContent = rejectionTemplate(job);
 
     await Promise.all(
       newlyRejected.map(async (userId) => {
@@ -48,12 +46,10 @@ const sendRejectionEmail = onDocumentUpdated(
             return;
           }
 
-          const emailContent = rejectionTemplate(job);
-          await sendEmail({
+          await sendTemplateEmail({
             to: user.email,
-            subject: emailContent.subject,
-            text: emailContent.text,
-            html: emailContent.html,
+            template: rejectionTemplate,
+            data: job,
           });
 
           console.log(`Rejection email sent to ${user.email}`);

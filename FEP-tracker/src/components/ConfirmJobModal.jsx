@@ -10,7 +10,10 @@ import { database } from "../firebase-config";
 import { collection, addDoc, deleteDoc, doc } from "firebase/firestore";
 import StudentName from "./StudentName";
 
-const ConfirmJobModal = forwardRef(function ConfirmJobModal({onConfirmed},ref) {
+const ConfirmJobModal = forwardRef(function ConfirmJobModal(
+  { onConfirmed },
+  ref,
+) {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmingEvent, setConfirmingEvent] = useState(null);
   const [confirmingStudents, setConfirmingStudents] = useState({});
