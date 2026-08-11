@@ -13,13 +13,13 @@ import {
 const baseNavLinks = [
   { href: "/", label: "Schedule", icon: <Calendar4Week className="me-3" />  },
   { href: "/profile", label: "Dashboard", icon: <House className="me-3" /> },
-  { href: "/payperiod", label: "Pay Periods", icon: <CurrencyDollar className="me-3" /> },
+/*   { href: "/payperiod", label: "Pay Periods", icon: <CurrencyDollar className="me-3" /> }, */
   { href: "/logout", label: "Logout", icon: <BoxArrowInRight className="me-3" /> },
 ];
 
 const staffLinks = [
   { href: "/users", label: "Users", icon: <People className="me-3" />},
-  { href: "/reports", label: "Reports", icon: <FileEarmarkBarGraph className="me-3" />}
+ /*  { href: "/reports", label: "Reports", icon: <FileEarmarkBarGraph className="me-3" />} */
 ];
 
 export default function Navbar({ user }) {
@@ -48,7 +48,7 @@ export default function Navbar({ user }) {
   {/* Title - visible on mobile, hidden when menu is open */}
   {!isOpen && (
     <span className="fw-bold fs-6 text-white d-md-none mx-auto">
-      Flexible Employement Program
+      Flexible Employment Program
     </span>
   )}
 

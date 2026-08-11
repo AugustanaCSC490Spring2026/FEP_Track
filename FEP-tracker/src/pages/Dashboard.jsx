@@ -135,13 +135,13 @@ function Dashboard({ user }) {
               </h2>
               <p style={{ color: "var(--color-text-secondary)", fontSize: "0.95rem", lineHeight: "1.4" }}>
                 Welcome, <strong>{user.displayName || "Student"}</strong>.
-                View your schedule and use the clock to track your hours.
+               {/*  View your schedule and use the clock to track your hours. */}
               </p>
             </div>
 
-            <div className="p-4 rounded shadow-sm mb-3" style={{ backgroundColor: "var(--color-bg-card)", border: "1px solid var(--color-bg-darker)" }}>
+           {/*  <div className="p-4 rounded shadow-sm mb-3" style={{ backgroundColor: "var(--color-bg-card)", border: "1px solid var(--color-bg-darker)" }}>
               <TimeClockModal user={user} jobs={myJobs} />
-            </div>
+            </div> */}
           </div>
         </Col>
 

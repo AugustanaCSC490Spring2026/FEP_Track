@@ -111,8 +111,8 @@ function Login() {
               {/* Main Login Card */}
               <Card className="shadow-lg border-0" style={{ padding: "0"}}> 
                 <Card.Header className="bg-primary text-white text-center ">
-                  <h2 className="mb-1">FEP Tracker</h2>
-                  <p className="mb-0 small">Field Experience Program</p>
+                  <h2 className="mb-1">Flexible Employment Program</h2>
+                  
                 </Card.Header>
                 
                 <Card.Body>

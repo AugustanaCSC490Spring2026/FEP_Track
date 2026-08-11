@@ -20,10 +20,10 @@ function toAMPM(time24) {
 
 function newJobTemplate(job) {
   return {
-    subject: `New FEP Opportunity: ${job.title}`,
+    subject: `New Flexible Employment Program Opportunity: ${job.title}`,
 
     text: `
-        FEP TRACKER NOTIFICATION
+        Flexible Employment Program  NOTIFICATION
 
         A new job opportunity has been posted.
 
@@ -43,7 +43,7 @@ function newJobTemplate(job) {
         <div style="font-family: Arial; max-width:600px; margin:auto; background:#fff; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
 
               <div style="background:#2563eb; padding:14px; color:white;">
-                  <h2 style="margin:0;">New FEP Opportunity</h2>
+                  <h2 style="margin:0;">New Flexible Employment Program Opportunity</h2>
               </div>
 
               <div style="padding:18px;">
@@ -63,7 +63,7 @@ function newJobTemplate(job) {
                   </p>
 
           <p style="margin-top:16px; font-size:12px; color:#6b7280;">
-            Please log in to the FEP Tracker dashboard to apply.
+            Please log in to the Flexible Employment Program dashboard to apply.
           </p>
 
         </div>
@@ -77,7 +77,7 @@ function spotOpenedTemplate(job) {
     subject: `Spot Available: ${job.title}`,
 
     text: `
-        FEP TRACKER NOTIFICATION
+        Flexible Employment Program  NOTIFICATION
 
         A spot has opened for the following job.
 
@@ -90,7 +90,7 @@ function spotOpenedTemplate(job) {
         Additional Information:
         ${job.extra_details || "None provided."}
 
-        Log in to claim this position. Link: https://fep-tracker.web.app
+        Log in to claim this position. Link: https://fep.web.app
     `,
 
     html: `
@@ -122,7 +122,7 @@ function spotOpenedTemplate(job) {
           </div>
 
           <p style="margin-top:16px; font-size:12px; color:#6b7280;">
-            Log in to the FEP Tracker dashboard to claim this spot. <br>
+            Log in to the Flexible Employment Program Tracker dashboard to claim this spot. <br>
             Link: https://fep-tracker.web.app
           </p>
 
@@ -142,7 +142,7 @@ function spotOpenedTemplateAdmin(job, droppedUsers = []) {
     subject: `Spot Opened: ${job.title}`,
 
     text: `
-      FEP TRACKER NOTIFICATION
+      Flexible Employment Program TRACKER NOTIFICATION
 
       ${droppedNames} dropped out of the following job, opening a spot.
 
@@ -155,7 +155,7 @@ function spotOpenedTemplateAdmin(job, droppedUsers = []) {
       Additional Information:
       ${job.extra_details || "None provided."}
 
-      Log in to the FEP Tracker dashboard to view or reassign this spot. <br>
+      Log in to the Flexible Employment Program Tracker dashboard to view or reassign this spot. <br>
       Link: https://fep-tracker.web.app
     `,
 
@@ -188,7 +188,7 @@ function spotOpenedTemplateAdmin(job, droppedUsers = []) {
           </div>
 
           <p style="margin-top:16px; font-size:12px; color:#6b7280;">
-            Log in to the FEP Tracker dashboard to view or reassign this spot. <br>
+            Log in to the Flexible Employment Program Tracker dashboard to view or reassign this spot. <br>
             Link: https://fep-tracker.web.app
           </p>
 
@@ -275,10 +275,10 @@ function calendarAssignedTemplate(job, calendarAdded = false) {
 
 function newUserTemplate(user) {
   return {
-    subject: "Welcome to FEP Tracker",
+    subject: "Welcome to Flexible Employment Program Tracker",
 
     text: `
-      Welcome to FEP Tracker!
+      Welcome to Flexible Employment Program Tracker!
 
       Your account has been successfully created.
 
@@ -306,14 +306,14 @@ function newUserTemplate(user) {
       <div style="font-family: Arial; max-width:600px; margin:auto; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
 
         <div style="background:#16a34a; color:white; padding:14px;">
-          <h2 style="margin:0;">Welcome to FEP Tracker</h2>
+          <h2 style="margin:0;">Welcome to Flexible Employment Program Tracker</h2>
         </div>
 
         <div style="padding:18px;">
 
           <p>Your account has been successfully created.</p>
           <p>You can now log in and begin applying for available jobs. <br>
-          The link to the login page is: https://fep-tracker.web.app</p>
+          The link to the login page is: https://Flexible Employment Program-tracker.web.app</p>
           <div style="background:#f3f4f6; padding:12px; border-radius:6px;">
             <p><strong>Email:</strong> ${user.email || "Your registered email"}</p>
             <p><strong>Name:</strong> ${user.name || "Your name"}</p>
@@ -350,7 +350,7 @@ function rejectionTemplate(job) {
         If you have any questions, please contact  ${job.supervisor || "your supervisor"}.
 
         Best regards,
-        The FEP Tracker Team
+        The Flexible Employment Program Tracker Team
     `,
 
     html: `
@@ -397,7 +397,7 @@ function droppedOrRemovedTemplate(job, droppedUsers) {
       If you have any questions, please contact ${job.supervisor || "your supervisor"}.
 
       Best regards,
-      The FEP Tracker Team
+      The Flexible Employment Program Tracker Team
     `,
 
     html: `

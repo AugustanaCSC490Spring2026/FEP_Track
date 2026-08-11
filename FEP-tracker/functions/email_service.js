@@ -75,7 +75,7 @@ async function sendEmail({ to, subject, text, html }) {
   console.log("Email text:", text);
   console.log("Email html:", html);
   const mailOptions = {
-    from: `"FEP Tracker" <${GMAIL_EMAIL.value()}>`,
+    from: `"Flexible Employment Program Tracker" <${GMAIL_EMAIL.value()}>`,
     to,
     subject,
     text: text || "",
