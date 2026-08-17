@@ -5,7 +5,7 @@ function formatTimeRange(timeRange) {
 
   return `${toAMPM(start)} – ${toAMPM(end)}`;
 }
-
+const LINK_TO_LOGIN_PAGE = "https://fep-tracker.web.app";
 function toAMPM(time24) {
   if (!time24) return "TBD";
 
@@ -37,6 +37,7 @@ function newJobTemplate(job) {
         ${job.extra_details || "None provided"}
 
         Please log in to view details and apply.
+        Link: ${LINK_TO_LOGIN_PAGE}
             `,
 
     html: `
@@ -63,7 +64,8 @@ function newJobTemplate(job) {
                   </p>
 
           <p style="margin-top:16px; font-size:12px; color:#6b7280;">
-            Please log in to the Flexible Employment Program dashboard to apply.
+            Please log in to the Flexible Employment Program dashboard to apply. <br>
+            Link: ${LINK_TO_LOGIN_PAGE}
           </p>
 
         </div>
@@ -90,7 +92,7 @@ function spotOpenedTemplate(job) {
         Additional Information:
         ${job.extra_details || "None provided."}
 
-        Log in to claim this position. Link: https://fep.web.app
+        Log in to claim this position. Link: ${LINK_TO_LOGIN_PAGE}
     `,
 
     html: `
@@ -122,8 +124,8 @@ function spotOpenedTemplate(job) {
           </div>
 
           <p style="margin-top:16px; font-size:12px; color:#6b7280;">
-            Log in to the Flexible Employment Program Tracker dashboard to claim this spot. <br>
-            Link: https://fep-tracker.web.app
+            Log in to the Flexible Employment Program  dashboard to claim this spot. <br>
+            Link: ${LINK_TO_LOGIN_PAGE}
           </p>
 
         </div>
@@ -142,7 +144,7 @@ function spotOpenedTemplateAdmin(job, droppedUsers = []) {
     subject: `Spot Opened: ${job.title}`,
 
     text: `
-      Flexible Employment Program TRACKER NOTIFICATION
+      Flexible Employment Program  NOTIFICATION
 
       ${droppedNames} dropped out of the following job, opening a spot.
 
@@ -155,8 +157,8 @@ function spotOpenedTemplateAdmin(job, droppedUsers = []) {
       Additional Information:
       ${job.extra_details || "None provided."}
 
-      Log in to the Flexible Employment Program Tracker dashboard to view or reassign this spot. <br>
-      Link: https://fep-tracker.web.app
+      Log in to the Flexible Employment Program  dashboard to view or reassign this spot. <br>
+      Link: ${LINK_TO_LOGIN_PAGE}
     `,
 
     html: `
@@ -188,8 +190,8 @@ function spotOpenedTemplateAdmin(job, droppedUsers = []) {
           </div>
 
           <p style="margin-top:16px; font-size:12px; color:#6b7280;">
-            Log in to the Flexible Employment Program Tracker dashboard to view or reassign this spot. <br>
-            Link: https://fep-tracker.web.app
+            Log in to the Flexible Employment Program  dashboard to view or reassign this spot. <br>
+            Link: ${LINK_TO_LOGIN_PAGE}
           </p>
 
         </div>
@@ -275,10 +277,10 @@ function calendarAssignedTemplate(job, calendarAdded = false) {
 
 function newUserTemplate(user) {
   return {
-    subject: "Welcome to Flexible Employment Program Tracker",
+    subject: "Welcome to Flexible Employment Program ",
 
     text: `
-      Welcome to Flexible Employment Program Tracker!
+      Welcome to Flexible Employment Program !
 
       Your account has been successfully created.
 
@@ -288,7 +290,7 @@ function newUserTemplate(user) {
       Email: ${user.email || "Your registered email"}
       Name: ${user.name || "Your name"}
       You can now log in and begin applying for available jobs.
-      The link to the login page is: https://fep-tracker.web.app
+      The link to the login page is: ${LINK_TO_LOGIN_PAGE}
 
       ----------------------------------------
 
@@ -306,14 +308,14 @@ function newUserTemplate(user) {
       <div style="font-family: Arial; max-width:600px; margin:auto; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
 
         <div style="background:#16a34a; color:white; padding:14px;">
-          <h2 style="margin:0;">Welcome to Flexible Employment Program Tracker</h2>
+          <h2 style="margin:0;">Welcome to Flexible Employment Program </h2>
         </div>
 
         <div style="padding:18px;">
 
           <p>Your account has been successfully created.</p>
           <p>You can now log in and begin applying for available jobs. <br>
-          The link to the login page is: https://Flexible Employment Program-tracker.web.app</p>
+          The link to the login page is: ${LINK_TO_LOGIN_PAGE}</p>
           <div style="background:#f3f4f6; padding:12px; border-radius:6px;">
             <p><strong>Email:</strong> ${user.email || "Your registered email"}</p>
             <p><strong>Name:</strong> ${user.name || "Your name"}</p>
@@ -350,7 +352,7 @@ function rejectionTemplate(job) {
         If you have any questions, please contact  ${job.supervisor || "your supervisor"}.
 
         Best regards,
-        The Flexible Employment Program Tracker Team
+        The Flexible Employment Program Team
     `,
 
     html: `
@@ -391,13 +393,13 @@ function droppedOrRemovedTemplate(job, droppedUsers) {
     text: `
       You have been removed or dropped from the position "${job.title || "TBD"}".
 
-      The following students have dropped or been removed from the position:
+      The following student(s) have dropped or been removed from the position:
       ${droppedUsers.map((u) => u.name || u.email || u.id).join("\n")}
 
       If you have any questions, please contact ${job.supervisor || "your supervisor"}.
 
       Best regards,
-      The Flexible Employment Program Tracker Team
+      The Flexible Employment Program Team
     `,
 
     html: `
@@ -409,9 +411,9 @@ function droppedOrRemovedTemplate(job, droppedUsers) {
 
       <div style="padding:18px;">
 
-        <p>You have been removed or dropped from the position "${job.title || "TBD"}".</p>
+        <p>You have been removed or you dropped the position "${job.title || "TBD"}".</p>
 
-        <p>The following students have dropped or been removed from the position:</p>
+        <p>The following student(s) have dropped or been removed from the position:</p>
         <ul>
           ${droppedUsers.map((u) => `<li>${u.name || u.email || u.id}</li>`).join("")}
         </ul>
