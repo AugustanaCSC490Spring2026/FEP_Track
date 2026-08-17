@@ -23,7 +23,7 @@ function Students({ user }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("pending");
-  const [ID, setID] = useState("");
+  /* const [ID, setID] = useState(""); */
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState({});
@@ -38,13 +38,13 @@ function Students({ user }) {
   });
 
   const [editModal, setEditModal] = useState({ show: false, student: null });
-  const [editForm, setEditForm] = useState({ name: "", email: "",  ID: "" });
+  const [editForm, setEditForm] = useState({ name: "", email: "", /*  ID: "" */ });
 
   const openEditModal = (student) => {
     setEditForm({
       name: student.name || "",
       email: student.email || "",
-      ID: student.ID || "",
+      /*  ID: student.ID || "", */
     });
     setEditModal({ show: true, student });
   };
@@ -58,7 +58,7 @@ function Students({ user }) {
       await updateDoc(doc(database, "users", student.id), {
         name: editForm.name,
         email: editForm.email,
-        ID: editForm.ID,
+      /*   ID: editForm.ID, */
       });
       setStudents(prev =>
         prev.map(s => s.id === student.id ? { ...s, ...editForm } : s)
@@ -121,11 +121,11 @@ function Students({ user }) {
   const handleAddStudent = async (e) => {
     e.preventDefault();
     if (!email) return;
-    const newUser = { createdAt: serverTimestamp(), name: name || "N/A", email, role, ID };
+    const newUser = { createdAt: serverTimestamp(), name: name || "N/A", email, role/* , ID  */};
     try {
       const docRef = await addDoc(collection(database, "users"), newUser);
       setStudents(prev => [...prev, { id: docRef.id, ...newUser }]);
-      setName(""); setID(""); setEmail(""); setRole("pending"); setShowForm(false);
+      setName("");/*  setID(""); */ setEmail(""); setRole("pending"); setShowForm(false);
     } catch (err) { console.error("Error adding user:", err); }
   };
 
@@ -151,7 +151,7 @@ function Students({ user }) {
             name: row.name || "N/A",
             email: row.email,
             role: importedRole,
-            ID: row.id || ""
+           /*  ID: row.id || "" */
           };
           try {
             const docRef = await addDoc(collection(database, "users"), newStudent);
@@ -233,7 +233,7 @@ function Students({ user }) {
         toDelete.map(s => ({
           name: s.name || "",
           email: s.email || "",
-          ID: s.ID || "",
+          /* ID: s.ID || "", */
           role: s.role || "",
           note: notes[s.id] || "",
         })),
@@ -314,14 +314,14 @@ function Students({ user }) {
                 onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
               />
             </Form.Group>
-            <Form.Group className="mb-3">
+            {/* <Form.Group className="mb-3">
               <Form.Label>ID</Form.Label>
               <Form.Control
                 type="text"
                 value={editForm.ID}
                 onChange={(e) => setEditForm(prev => ({ ...prev, ID: e.target.value }))}
               />
-            </Form.Group>
+            </Form.Group> */}
             <Form.Group className="mb-3">
               <Form.Label>Email</Form.Label>
               <Form.Control
@@ -418,13 +418,13 @@ function Students({ user }) {
                 onChange={(e) => setName(e.target.value)}
                 required
               />
-              <Form.Control
+           {/*    <Form.Control
                 type="text"
                 placeholder="ID"
                 value={ID}
                 onChange={(e) => setID(e.target.value)}
                 required
-              />
+              /> */}
               <Form.Control
                 type="email"
                 placeholder="Email"
@@ -481,7 +481,7 @@ function Students({ user }) {
         <Table className="mb-0" style={{ fontSize: 14, minWidth: 700 }}>
           <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
             <tr>
-              {["Name", "ID", "Email ", "Role", "Notes", ""].map(h => (
+              {["Name", /* "ID", */ "Email ", "Role", "Notes", ""].map(h => (
                 <th
                   key={h}
                   onClick={h === "Role" ? () => setSortByRole(prev => !prev) : undefined}
@@ -525,9 +525,9 @@ function Students({ user }) {
                     {student.name || "N/A"}
                   </div>
                 </td>
-                <td style={{ padding: "12px 16px", color: "#64748b", fontWeight: 500, verticalAlign: "middle", whiteSpace: "nowrap" }}>
+               {/*  <td style={{ padding: "12px 16px", color: "#64748b", fontWeight: 500, verticalAlign: "middle", whiteSpace: "nowrap" }}>
                   {student.ID || "N/A"}
-                </td>
+                </td> */}
                 <td style={{ padding: "12px 16px", color: "#64748b", verticalAlign: "middle" }}>
                   <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.3 }}>
                     <span>{student.email || "N/A"}</span>
