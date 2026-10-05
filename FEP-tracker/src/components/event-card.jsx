@@ -10,6 +10,7 @@ import { useState } from "react";
 import { database } from "../firebase-config";
 import { doc, getDoc,deleteDoc } from "firebase/firestore";
 import { timeFormat } from "../Utils/timeUtils";
+import AssignStudentsModal from "./AssignStudentsModal";
 export default function EventCard({
   event,
   onCallBack,
@@ -17,6 +18,7 @@ export default function EventCard({
   user,
   onApply,
   onManage,
+  onRefresh,
   status,
   onConfirm,
   onViewCompletedDetails,
@@ -44,6 +46,7 @@ export default function EventCard({
   const tooLateToDrop = diffInHours < 1;
 
   const [showModal, setShowModal] = useState(false);
+  const [showAssign, setShowAssign] = useState(false);
   const [supervisorInfo, setSupervisorInfo] = useState(null);
 
   const pendingCount = event.pending_students?.length || 0;
@@ -188,6 +191,7 @@ const deleteEvent = async (id) => {
                           >
                             {pendingCount > 0 ? `Approvals (${pendingCount})` : "View Students"}
                           </Button>
+                          <Button disabled={!isAdmin} variant="success" size="sm" onClick={() => setShowAssign(true)}>Assign</Button>
                       </>
                   )}
 
@@ -284,6 +288,13 @@ const deleteEvent = async (id) => {
           </Button>
         </Modal.Footer>
       </Modal>
+
+      <AssignStudentsModal
+        show={showAssign}
+        onHide={() => setShowAssign(false)}
+        event={event}
+        onRefresh={onRefresh}
+      />
     </div>
   );
 }

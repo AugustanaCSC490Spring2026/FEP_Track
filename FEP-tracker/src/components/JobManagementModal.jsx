@@ -2,10 +2,12 @@ import React, { useState, useEffect } from "react";
 import { Modal, Button, ListGroup, Spinner } from "react-bootstrap";
 import { database } from "../firebase-config";
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import AssignStudentsModal from "./AssignStudentsModal";
 
 export default function JobManagementModal({ show, onHide, event, onRefresh }) {
     const [studentNames, setStudentNames] = useState({});
     const [loading, setLoading] = useState(false);
+    const [showAssign, setShowAssign] = useState(false);
 
     useEffect(() => {
         const fetchNames = async () => {
@@ -52,11 +54,16 @@ export default function JobManagementModal({ show, onHide, event, onRefresh }) {
     };
 
     return (
-        <Modal show={show} onHide={onHide} centered>
+        <>
+        <Modal show={show && !showAssign} onHide={onHide} centered>
             <Modal.Header closeButton>
                 <Modal.Title>Manage Roster: {event?.title}</Modal.Title>
             </Modal.Header>
             <Modal.Body>
+                <Button variant="primary" size="sm" className="w-100 mb-3" onClick={() => setShowAssign(true)}>
+                    + Assign Students
+                </Button>
+
                 {/* SECTION: PENDING STUDENTS */}
                 <h6 className="fw-bold text-primary">Pending Approval</h6>
                 <ListGroup className="mb-4">
@@ -91,5 +98,13 @@ export default function JobManagementModal({ show, onHide, event, onRefresh }) {
                 </ListGroup>
             </Modal.Body>
         </Modal>
+
+        <AssignStudentsModal
+            show={show && showAssign}
+            onHide={() => setShowAssign(false)}
+            event={event}
+            onRefresh={onRefresh}
+        />
+        </>
     );
 }

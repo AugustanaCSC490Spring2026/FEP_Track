@@ -12,7 +12,7 @@ import Students from './pages/students';
 import OAuthCallback from './hooks/OAuthCallback';
 import PayPeriod from './pages/payperiod';
 import Reports from './pages/Reports';
-
+/* Not a great setup but the test and production use the same servers */
 const ProtectedRoute = ({ user, allowedRoles, children }) => {
   // No user at all — send to login
   if (!user) {
